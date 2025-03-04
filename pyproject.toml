@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vec2text"
+version = "0.0.13"
+description = "convert embedding vectors back to text"
+authors = [
+    {name = "Jack Morris", email = "jxm3@cornell.edu"}
+]
+dependencies = [
+    "accelerate",
+    "bert_score",
+    "datasets",
+    "einops",
+    "evaluate",
+    "openai",
+    "optimum",
+    "pre-commit",
+    "rouge_score",
+    "sacrebleu",
+    "sentence_transformers",
+    "tenacity",
+    "tokenizers",
+    "tqdm",
+    "transformers",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8",
+    "isort",
+    "mypy",
+]
+
+[tool.setuptools]
+packages = {find = {}}
+
+[tool.black]
+line-length = 100
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+strict = false
+implicit_reexport = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_decorators = false
+implicit_reexport = true
+
+[tool.flake8]
+ignore = ["N801", "E203", "E266", "E501", "W503", "F812", "E741", "N803", "N802", "N806"]
+max-line-length = 100
+exclude = [".git", "__pycache__", "build", "dist", "tests"]
+
+[dependency-groups]
+test = [
+    "pytest>=8.3.5",
+]
