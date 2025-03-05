@@ -102,9 +102,7 @@ class JailbreakPromptTrainer(BaseTrainer):
         #     map(self._filter_prompt, untokenized_generations)
         # )
         if self.take_first_line:
-            untokenized_generations = list(
-                map(self._take_first_line, untokenized_generations)
-            )
+            untokenized_generations = list(map(self._take_first_line, untokenized_generations))
         retokenized_generations = self.tokenizer(
             untokenized_generations,
             truncation=True,

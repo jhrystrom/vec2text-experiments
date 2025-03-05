@@ -18,11 +18,7 @@ from vec2text.run_args import DataArguments, ModelArguments, TrainingArguments
 from vec2text import run_args as run_args
 
 device = torch.device(
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
+    "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 )
 transformers.logging.set_verbosity_error()
 
@@ -50,37 +46,31 @@ def load_experiment_and_trainer(
         checkpoint = checkpoint_folder
     print("[analyze_utils] Loading model from checkpoint:", checkpoint)
 
-
-    cwd = os.path.dirname(
-        os.path.abspath(__file__)
-    )
+    cwd = os.path.dirname(os.path.abspath(__file__))
     print(f"[analyze_utils] adding cwd to path: {cwd}")
     sys.path.append(cwd)
 
     if args_str is not None:
         args = shlex.split(args_str)
         parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
-        model_args, data_args, training_args = parser.parse_args_into_dataclasses(
-            args=args
-        )
+        model_args, data_args, training_args = parser.parse_args_into_dataclasses(args=args)
     else:
         print("[analyze_utils] loading args from checkpoint", checkpoint)
         try:
-            print("[analyze_utils] loading data_args from", os.path.join(checkpoint, os.pardir, "data_args.bin"))
+            print(
+                "[analyze_utils] loading data_args from",
+                os.path.join(checkpoint, os.pardir, "data_args.bin"),
+            )
             data_args = torch.load(os.path.join(checkpoint, os.pardir, "data_args.bin"))
-        except (FileNotFoundError):
+        except FileNotFoundError:
             data_args = torch.load(os.path.join(checkpoint, "data_args.bin"))
         try:
-            model_args = torch.load(
-                os.path.join(checkpoint, os.pardir, "model_args.bin")
-            )
-        except (FileNotFoundError):
+            model_args = torch.load(os.path.join(checkpoint, os.pardir, "model_args.bin"))
+        except FileNotFoundError:
             model_args = torch.load(os.path.join(checkpoint, "model_args.bin"))
         try:
-            training_args = torch.load(
-                os.path.join(checkpoint, os.pardir, "training_args.bin")
-            )
-        except (FileNotFoundError):
+            training_args = torch.load(os.path.join(checkpoint, os.pardir, "training_args.bin"))
+        except FileNotFoundError:
             training_args = torch.load(os.path.join(checkpoint, "training_args.bin"))
 
     training_args.dataloader_num_workers = 0  # no multiprocessing :)
@@ -96,9 +86,7 @@ def load_experiment_and_trainer(
         model_args.max_seq_length = max_seq_length
 
     if use_less_data is not None:
-        print(
-            f"Overwriting use_less_data from {data_args.use_less_data} to {use_less_data}"
-        )
+        print(f"Overwriting use_less_data from {data_args.use_less_data} to {use_less_data}")
         data_args.use_less_data = use_less_data
 
     # For batch decoding outputs during evaluation.
@@ -123,9 +111,9 @@ def load_experiment_and_trainer(
         training_args.distributed_state = PartialState()
         training_args.deepspeed_plugin = None  # For backwards compatibility
         training_args.bf16 = 0  # no bf16 in case no support from GPU
-    
+
     # Need to delete this cached property so that it's properly recomputed.
-    if '__cached__setup_devices' in training_args.__dict__:
+    if "__cached__setup_devices" in training_args.__dict__:
         del training_args.__dict__["__cached__setup_devices"]
 
     experiment = experiments.experiment_from_args(model_args, data_args, training_args)
@@ -144,9 +132,7 @@ def load_experiment_and_trainer(
     return experiment, trainer
 
 
-def load_trainer(
-    *args, **kwargs
-):  # (can't import due to circluar import) -> trainers.Inversion
+def load_trainer(*args, **kwargs):  # (can't import due to circluar import) -> trainers.Inversion
     experiment, trainer = load_experiment_and_trainer(*args, **kwargs)
     return trainer
 
@@ -206,9 +192,7 @@ def load_gpt_fewshot_baseline_trainer(
     num_tokens_per_example: int = 50,
 ):
     args_str = f"--per_device_train_batch_size 16 --per_device_eval_batch_size 16 --max_seq_length {max_seq_len} --num_train_epochs 100 --max_eval_samples 1000 --eval_steps 25000 --warmup_steps 100000 --learning_rate 0.0002 --dataset_name {dataset_name} --model_name_or_path t5-base --use_wandb=0 --embedder_model_name {embedder_model_name} --experiment inversion_from_logits --bf16=1 --embedder_torch_dtype bfloat16 --lr_scheduler_type constant_with_warmup --use_frozen_embeddings_as_input 1 --mock_embedder 0 --use_less_data 1000"
-    parser = transformers.HfArgumentParser(
-        (ModelArguments, DataArguments, TrainingArguments)
-    )
+    parser = transformers.HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses(
         args=shlex.split(args_str)
     )
@@ -258,9 +242,7 @@ def load_jailbreak_baseline_trainer(
     num_tokens_per_example: int = 50,
 ):
     args_str = f"--per_device_train_batch_size 16 --per_device_eval_batch_size 16 --max_seq_length {max_seq_len} --num_train_epochs 100 --max_eval_samples 1000 --eval_steps 25000 --warmup_steps 100000 --learning_rate 0.0002 --dataset_name {dataset_name} --model_name_or_path t5-base --use_wandb=0 --embedder_model_name {embedder_model_name} --experiment inversion_from_logits --bf16=1 --embedder_torch_dtype bfloat16 --lr_scheduler_type constant_with_warmup --use_frozen_embeddings_as_input 1 --mock_embedder 0 --use_less_data 1000"
-    parser = transformers.HfArgumentParser(
-        (ModelArguments, DataArguments, TrainingArguments)
-    )
+    parser = transformers.HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses(
         args=shlex.split(args_str)
     )
@@ -307,9 +289,7 @@ def load_seq2seq_baseline_trainer(
     max_seq_len: int = 64,
 ):
     args_str = f"--per_device_train_batch_size 16 --per_device_eval_batch_size 16 --max_seq_length {max_seq_len} --num_train_epochs 100 --max_eval_samples 1000 --eval_steps 25000 --warmup_steps 100000 --learning_rate 0.0002 --dataset_name {dataset_name} --model_name_or_path t5-base --use_wandb=0 --embedder_model_name {embedder_model_name} --experiment inversion_from_logits --bf16=1 --embedder_torch_dtype bfloat16 --lr_scheduler_type constant_with_warmup --use_frozen_embeddings_as_input 1 --mock_embedder 0 --use_less_data 1000"
-    parser = transformers.HfArgumentParser(
-        (ModelArguments, DataArguments, TrainingArguments)
-    )
+    parser = transformers.HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses(
         args=shlex.split(args_str)
     )

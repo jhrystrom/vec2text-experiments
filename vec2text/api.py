@@ -28,12 +28,8 @@ def load_pretrained_corrector(embedder: str) -> vec2text.trainers.Corrector:
             "jxm/vec2text__openai_ada002__msmarco__msl128__corrector"
         )
     elif embedder == "gtr-base":
-        inversion_model = vec2text.models.InversionModel.from_pretrained(
-            "jxm/gtr__nq__32"
-        )
-        model = vec2text.models.CorrectorEncoderModel.from_pretrained(
-            "jxm/gtr__nq__32__correct"
-        )
+        inversion_model = vec2text.models.InversionModel.from_pretrained("jxm/gtr__nq__32")
+        model = vec2text.models.CorrectorEncoderModel.from_pretrained("jxm/gtr__nq__32__correct")
     else:
         raise NotImplementedError(f"embedder `{embedder}` not implemented")
 
@@ -91,9 +87,7 @@ def invert_embeddings(
     gen_kwargs["max_length"] = 128
 
     if num_steps is None:
-        assert (
-            sequence_beam_width == 0
-        ), "can't set a nonzero beam width without multiple steps"
+        assert sequence_beam_width == 0, "can't set a nonzero beam width without multiple steps"
 
         regenerated = corrector.inversion_trainer.generate(
             inputs={
@@ -112,9 +106,7 @@ def invert_embeddings(
             sequence_beam_width=sequence_beam_width,
         )
 
-    output_strings = corrector.tokenizer.batch_decode(
-        regenerated, skip_special_tokens=True
-    )
+    output_strings = corrector.tokenizer.batch_decode(regenerated, skip_special_tokens=True)
     return output_strings
 
 

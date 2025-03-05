@@ -108,9 +108,7 @@ class FewshotInversionTrainer(BaseTrainer):
                     input_ids=inputs["embedder_input_ids"],
                     attention_mask=inputs["embedder_attention_mask"],
                 )
-                embeddings = embeddings - self.unigram_embedding[None, :].to(
-                    embeddings.device
-                )
+                embeddings = embeddings - self.unigram_embedding[None, :].to(embeddings.device)
         prompt_suffixes = list(
             map(
                 functools.partial(

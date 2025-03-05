@@ -15,9 +15,7 @@ def test_invert_embeddings(corrector_ada):
         device=vec2text.models.model_utils.device,
         dtype=torch.float32,
     )
-    inverted_texts = vec2text.invert_embeddings(
-        embeddings=embeddings, corrector=corrector_ada
-    )
+    inverted_texts = vec2text.invert_embeddings(embeddings=embeddings, corrector=corrector_ada)
     assert len(inverted_texts) == len(embeddings)
 
 

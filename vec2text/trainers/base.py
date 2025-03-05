@@ -123,24 +123,18 @@ class BaseTrainer(transformers.Trainer):
             generation_kwargs=gen_kwargs,
         )
         print("\tDecoded output shape -> ", regenerated.shape)
-        output_string = self.tokenizer.decode(
-            regenerated.flatten(), skip_special_tokens=True
-        )
+        output_string = self.tokenizer.decode(regenerated.flatten(), skip_special_tokens=True)
         print("\tDecoded output ->", output_string)
         print("=" * 16, "End trainer sanity check", "=" * 16)
 
-    def _log_preds_table(
-        self, table_key: str, decoded_preds: List[str], decoded_labels: List[str]
-    ):
+    def _log_preds_table(self, table_key: str, decoded_preds: List[str], decoded_labels: List[str]):
         if not self.args.use_wandb:
             return
         elif not (self.args.local_rank <= 0):
             return
 
         num_rows = 50
-        idxs = random.choices(
-            range(len(decoded_preds)), k=min(len(decoded_preds), num_rows)
-        )
+        idxs = random.choices(range(len(decoded_preds)), k=min(len(decoded_preds), num_rows))
 
         data = []
         for idx in idxs:
@@ -176,9 +170,7 @@ class BaseTrainer(transformers.Trainer):
             max_length = self.model.config.max_seq_length
             gen_kwargs["max_length"] = max_length
             with torch.no_grad():
-                generated_text = self.generate(
-                    inputs=inputs_cuda, generation_kwargs=gen_kwargs
-                )
+                generated_text = self.generate(inputs=inputs_cuda, generation_kwargs=gen_kwargs)
             if generated_text.shape[1] < max_length:
                 # Pad generated text to max length
                 pad_tokens = (
@@ -212,15 +204,9 @@ class BaseTrainer(transformers.Trainer):
 
         return all_preds, all_labels
 
-    def _compute_data_metrics(
-        self, inputs: Dict[str, torch.Tensor]
-    ) -> Dict[str, float]:
+    def _compute_data_metrics(self, inputs: Dict[str, torch.Tensor]) -> Dict[str, float]:
         inputs_pad_tokens = (
-            (inputs["input_ids"] == self.tokenizer.pad_token_id)
-            .sum(dim=1)
-            .float()
-            .mean()
-            .item()
+            (inputs["input_ids"] == self.tokenizer.pad_token_id).sum(dim=1).float().mean().item()
         )
         embedder_inputs_pad_tokens = (
             (inputs["embedder_input_ids"] == self.embedder_tokenizer.pad_token_id)
@@ -231,9 +217,7 @@ class BaseTrainer(transformers.Trainer):
         )
 
         inputs_non_pad_tokens = inputs["input_ids"].shape[1] - inputs_pad_tokens
-        embedder_inputs_non_pad_tokens = (
-            inputs["input_ids"].shape[1] - embedder_inputs_pad_tokens
-        )
+        embedder_inputs_non_pad_tokens = inputs["input_ids"].shape[1] - embedder_inputs_pad_tokens
 
         return {
             "encoder_decoder_inputs_pad_tokens": inputs_pad_tokens,
@@ -254,9 +238,7 @@ class BaseTrainer(transformers.Trainer):
         # preds have the same shape as the labels.
         labels = labels.reshape(-1)
         preds = preds.reshape(-1)
-        accuracy_result = self.metric_accuracy.compute(
-            predictions=preds, references=labels
-        )
+        accuracy_result = self.metric_accuracy.compute(predictions=preds, references=labels)
 
         return {**accuracy_result}
 
@@ -310,15 +292,9 @@ class BaseTrainer(transformers.Trainer):
             recall_sum += recall
 
             ############################################################
-            num_overlapping_words.append(
-                count_overlapping_ngrams(true_words, pred_words, 1)
-            )
-            num_overlapping_bigrams.append(
-                count_overlapping_ngrams(true_words, pred_words, 2)
-            )
-            num_overlapping_trigrams.append(
-                count_overlapping_ngrams(true_words, pred_words, 3)
-            )
+            num_overlapping_words.append(count_overlapping_ngrams(true_words, pred_words, 1))
+            num_overlapping_bigrams.append(count_overlapping_ngrams(true_words, pred_words, 2))
+            num_overlapping_trigrams.append(count_overlapping_ngrams(true_words, pred_words, 3))
 
         set_token_metrics = {
             "token_set_precision": (precision_sum / num_preds),
@@ -351,9 +327,7 @@ class BaseTrainer(transformers.Trainer):
         gen_metrics = {
             "bleu_score": bleu_results.mean(),
             "bleu_score_sem": sem(bleu_results),
-            "rouge_score": rouge_result[
-                "rouge1"
-            ],  # ['rouge1', 'rouge2', 'rougeL', 'rougeLsum']
+            "rouge_score": rouge_result["rouge1"],  # ['rouge1', 'rouge2', 'rougeL', 'rougeLsum']
             # "bert_score": statistics.fmean(bertscore_result["f1"]),
             "exact_match": mean(exact_matches),
             "exact_match_sem": sem(exact_matches),
@@ -365,9 +339,7 @@ class BaseTrainer(transformers.Trainer):
 
         return all_metrics
 
-    def eval_generation_metrics(
-        self, dataloader: torch.utils.data.DataLoader
-    ) -> Dict[str, float]:
+    def eval_generation_metrics(self, dataloader: torch.utils.data.DataLoader) -> Dict[str, float]:
         # Get decoded text. Note that this is different than `preds`, which
         # is used to compute the loss.
         preds_sample_list, preds_sample_labels_list = self._get_decoded_sequences(
@@ -375,9 +347,7 @@ class BaseTrainer(transformers.Trainer):
         )
 
         # Log BLEU, log table of text.
-        decoded_preds = self.tokenizer.batch_decode(
-            preds_sample_list, skip_special_tokens=True
-        )
+        decoded_preds = self.tokenizer.batch_decode(preds_sample_list, skip_special_tokens=True)
         decoded_labels = self.tokenizer.batch_decode(
             preds_sample_labels_list, skip_special_tokens=True
         )
@@ -406,15 +376,12 @@ class BaseTrainer(transformers.Trainer):
 
         # Compute sims of eval data using embedder.
         preds_sample = torch.tensor(preds_sample_list, device=self.args.device)[:128]
-        preds_sample_labels = torch.tensor(
-            preds_sample_labels_list, device=self.args.device
-        )[:128]
+        preds_sample_labels = torch.tensor(preds_sample_labels_list, device=self.args.device)[:128]
 
         # Log num tokens.
         num_tokens_metrics = {
             "pred_num_tokens": (
-                (preds_sample != self.pad_token_id)
-                & (preds_sample != self.bos_token_id)
+                (preds_sample != self.pad_token_id) & (preds_sample != self.bos_token_id)
             )
             .sum(1)
             .float()
@@ -461,9 +428,7 @@ class BaseTrainer(transformers.Trainer):
                 pad_token_id = self.pad_token_id
                 preds_emb = self.call_embedding_model(
                     input_ids=preds_sample_retokenized,
-                    attention_mask=(preds_sample_retokenized != pad_token_id).to(
-                        self.args.device
-                    ),
+                    attention_mask=(preds_sample_retokenized != pad_token_id).to(self.args.device),
                 )
                 preds_sample_labels_retokenized = self.embedder_tokenizer(
                     decoded_labels, padding=True, truncation=False, return_tensors="pt"
@@ -539,9 +504,7 @@ class BaseTrainer(transformers.Trainer):
             model = self.model
 
         if not os.path.isfile(os.path.join(resume_from_checkpoint, WEIGHTS_NAME)):
-            raise ValueError(
-                f"Can't find a valid checkpoint at {resume_from_checkpoint}"
-            )
+            raise ValueError(f"Can't find a valid checkpoint at {resume_from_checkpoint}")
 
         logger.info(f"Loading model from {resume_from_checkpoint}.")
 
@@ -553,9 +516,7 @@ class BaseTrainer(transformers.Trainer):
             state_dict = self._remap_state_dict(state_dict)
             # workaround for FSDP bug https://github.com/pytorch/pytorch/issues/82963
             # which takes *args instead of **kwargs
-            missing_keys, unexpected_keys = model.load_state_dict(
-                state_dict, strict=False
-            )
+            missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
             assert all(
                 [k.startswith("embedder.") for k in missing_keys]
             ), f"invalid missing keys: {missing_keys}"

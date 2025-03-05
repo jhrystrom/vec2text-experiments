@@ -90,9 +90,7 @@ class Corrector(BaseTrainer):
         if metric_key_prefix in {"eval_msmarco", "eval_nq"}:
             n_rounds = 5
             self.num_gen_recursive_steps = n_rounds
-            multi_round_generation_metrics = self.eval_generation_metrics(
-                dataloader=dataloader
-            )
+            multi_round_generation_metrics = self.eval_generation_metrics(dataloader=dataloader)
             multiround_generation_metrics = {
                 f"{metric_key_prefix}_{n_rounds}round_{k}": v
                 for k, v in multi_round_generation_metrics.items()
@@ -134,9 +132,7 @@ class Corrector(BaseTrainer):
         ):
             num_tokens = attention_mask.sum()
             ds_inputs["hypothesis_input_ids"].append(input_ids[: num_tokens + 1])
-            ds_inputs["hypothesis_attention_mask"].append(
-                attention_mask[: num_tokens + 1]
-            )
+            ds_inputs["hypothesis_attention_mask"].append(attention_mask[: num_tokens + 1])
         print("input_ids[0]:", self.tokenizer.decode(ds_inputs["input_ids"][0]))
         print(
             "hypothesis_input_ids[0]:",
@@ -195,9 +191,7 @@ class Corrector(BaseTrainer):
             dataset.save_to_disk(cache_path)
         else:
             logging.info("Loading hypotheses from path %s", cache_path)
-            print(
-                f"\t[{dataset.builder_name}] Loading hypotheses from path {cache_path}"
-            )
+            print(f"\t[{dataset.builder_name}] Loading hypotheses from path {cache_path}")
             dataset = datasets.load_from_disk(cache_path)
         dataset.set_format("pt")
         return dataset, cache_path
@@ -417,15 +411,11 @@ class Corrector(BaseTrainer):
         frozen_embeddings = inputs["frozen_embeddings"]
         ################################################################################
         if not generation_kwargs["do_sample"]:
-            num_return_sequences = max(
-                sequence_beam_width, generation_kwargs.get("num_beams", 1)
-            )
+            num_return_sequences = max(sequence_beam_width, generation_kwargs.get("num_beams", 1))
             generation_kwargs["num_beams"] = num_return_sequences
             generation_kwargs["num_return_sequences"] = num_return_sequences
 
-        if (num_recursive_steps_so_far == 0) and (
-            self.initial_hypothesis_str is not None
-        ):
+        if (num_recursive_steps_so_far == 0) and (self.initial_hypothesis_str is not None):
             # Support setting a string as the initial hypothesis (for ablations)
             logger.info(f"Using initial hypothesis: {self.initial_hypothesis_str}")
             # If set, uses this string as the hypothesis for step 0 of self-correction
@@ -453,9 +443,7 @@ class Corrector(BaseTrainer):
             # )
             bos_token_id = self.model.encoder_decoder.config.decoder_start_token_id
             bos_token_ids = (
-                torch.ones(
-                    (batch_size, 1), dtype=torch.long, device=gen_text_ids.device
-                )
+                torch.ones((batch_size, 1), dtype=torch.long, device=gen_text_ids.device)
                 * bos_token_id
             )
             gen_text_ids = torch.cat((bos_token_ids, gen_text_ids[:, :-1]), dim=1)
@@ -471,20 +459,16 @@ class Corrector(BaseTrainer):
             # https://discuss.huggingface.co/t/announcement-generation-get-probabilities-for-generated-output/30075
             if "beam_indices" in outputs:
                 with torch.no_grad():
-                    transition_scores = (
-                        self.model.encoder_decoder.compute_transition_scores(
-                            outputs.sequences,
-                            outputs.scores,
-                            outputs.beam_indices,
-                            normalize_logits=True,
-                        )
+                    transition_scores = self.model.encoder_decoder.compute_transition_scores(
+                        outputs.sequences,
+                        outputs.scores,
+                        outputs.beam_indices,
+                        normalize_logits=True,
                     )
             else:
                 with torch.no_grad():
-                    transition_scores = (
-                        self.model.encoder_decoder.compute_transition_scores(
-                            outputs.sequences, outputs.scores, normalize_logits=True
-                        )
+                    transition_scores = self.model.encoder_decoder.compute_transition_scores(
+                        outputs.sequences, outputs.scores, normalize_logits=True
                     )
             length_penalty = self.model.encoder_decoder.generation_config.length_penalty
             output_length = (transition_scores < 0).sum(1)
@@ -519,16 +503,14 @@ class Corrector(BaseTrainer):
                 else:
                     scores = gen_text_scores.reshape((batch_size, beam_width))
                 best_idx_in_beam = scores.argmax(1)
-                hypothesis_embedding = hypothesis_embedding.reshape(
-                    (batch_size, beam_width, -1)
-                )[torch.arange(batch_size), best_idx_in_beam]
+                hypothesis_embedding = hypothesis_embedding.reshape((batch_size, beam_width, -1))[
+                    torch.arange(batch_size), best_idx_in_beam
+                ]
                 gen_text_ids = gen_text_ids.reshape((batch_size, beam_width, -1))[
                     torch.arange(batch_size), best_idx_in_beam
                 ]
                 # Flatten again so we can do normal operations.
-                gen_text_ids = gen_text_ids.reshape(
-                    (batch_size * sequence_beam_width, -1)
-                )
+                gen_text_ids = gen_text_ids.reshape((batch_size * sequence_beam_width, -1))
                 hypothesis_embedding = hypothesis_embedding.reshape(
                     (batch_size * sequence_beam_width, -1)
                 )
@@ -551,9 +533,9 @@ class Corrector(BaseTrainer):
                 best_idx_in_beam = scores.argmax(dim=1)
                 # print("best_idx_in_beam:", best_idx_in_beam)
                 # print("avg_distances:", distances_per_beam.mean(1).tolist(), "max_distances:", distances_per_beam.max(1).values.tolist())
-                hypothesis_embedding = hypothesis_embedding.reshape(
-                    (batch_size, beam_width, -1)
-                )[torch.arange(batch_size), best_idx_in_beam]
+                hypothesis_embedding = hypothesis_embedding.reshape((batch_size, beam_width, -1))[
+                    torch.arange(batch_size), best_idx_in_beam
+                ]
                 gen_text_ids = gen_text_ids.reshape((batch_size, beam_width, -1))[
                     torch.arange(batch_size), best_idx_in_beam
                 ]
@@ -581,9 +563,7 @@ class Corrector(BaseTrainer):
                     frozen_embeddings_per_beam = (
                         inputs["frozen_embeddings"][:, None, :]
                         .repeat((1, num_return_sequences, 1))
-                        .reshape(
-                            (batch_size, sequence_beam_width * num_return_sequences, -1)
-                        )
+                        .reshape((batch_size, sequence_beam_width * num_return_sequences, -1))
                     )
 
                 distances_per_beam = torch.nn.CosineSimilarity(dim=2)(
@@ -603,9 +583,7 @@ class Corrector(BaseTrainer):
 
                 # take top *unique* things in beam.
                 best_idx_in_beam_total = scores.topk(dim=1, k=beam_width).indices
-                hypothesis_embedding = hypothesis_embedding.reshape(
-                    (batch_size, beam_width, -1)
-                )
+                hypothesis_embedding = hypothesis_embedding.reshape((batch_size, beam_width, -1))
                 gen_text_ids = gen_text_ids.reshape((batch_size, beam_width, -1))
                 best_idx_in_beam = []
                 for batch_idx in range(len(best_idx_in_beam_total)):
@@ -622,17 +600,15 @@ class Corrector(BaseTrainer):
                     best_idx_in_beam, device=best_idx_in_beam_total.device
                 )
                 # now take top unique things
-                hypothesis_embedding = hypothesis_embedding.reshape(
-                    (batch_size, beam_width, -1)
-                )[torch.arange(batch_size)[:, None], best_idx_in_beam]
+                hypothesis_embedding = hypothesis_embedding.reshape((batch_size, beam_width, -1))[
+                    torch.arange(batch_size)[:, None], best_idx_in_beam
+                ]
                 gen_text_ids = gen_text_ids.reshape((batch_size, beam_width, -1))[
                     torch.arange(batch_size)[:, None], best_idx_in_beam
                 ]
 
                 # Flatten again so we can do normal operations.
-                gen_text_ids = gen_text_ids.reshape(
-                    (batch_size * sequence_beam_width, -1)
-                )
+                gen_text_ids = gen_text_ids.reshape((batch_size * sequence_beam_width, -1))
                 hypothesis_embedding = hypothesis_embedding.reshape(
                     (batch_size * sequence_beam_width, -1)
                 )
@@ -687,9 +663,7 @@ class Corrector(BaseTrainer):
             assert (
                 "input_ids" in inputs
             ), f"cannot generate hypothesis with input keys: {inputs.keys()}"
-            frozen_embeddings = self.embed_generated_hypothesis(
-                input_ids=inputs["input_ids"]
-            )
+            frozen_embeddings = self.embed_generated_hypothesis(input_ids=inputs["input_ids"])
 
         generation_kwargs = {
             "early_stopping": False,
@@ -708,9 +682,7 @@ class Corrector(BaseTrainer):
         hypothesis_attention_mask = (
             hypothesis_input_ids != self.model.encoder_decoder.config.pad_token_id
         )
-        hypothesis_embedding = self.embed_generated_hypothesis(
-            input_ids=hypothesis_input_ids
-        )
+        hypothesis_embedding = self.embed_generated_hypothesis(input_ids=hypothesis_input_ids)
         return (
             frozen_embeddings,
             hypothesis_input_ids,
@@ -795,26 +767,18 @@ class Corrector(BaseTrainer):
             state_dict["embedding_transform_2.0.weight"] = state_dict[
                 "embedding_transform_1.0.weight"
             ]
-            state_dict["embedding_transform_2.0.bias"] = state_dict[
-                "embedding_transform_1.0.bias"
-            ]
+            state_dict["embedding_transform_2.0.bias"] = state_dict["embedding_transform_1.0.bias"]
             state_dict["embedding_transform_2.3.weight"] = state_dict[
                 "embedding_transform_1.3.weight"
             ]
-            state_dict["embedding_transform_2.3.bias"] = state_dict[
-                "embedding_transform_1.3.bias"
-            ]
+            state_dict["embedding_transform_2.3.bias"] = state_dict["embedding_transform_1.3.bias"]
             #
             state_dict["embedding_transform_3.0.weight"] = state_dict[
                 "embedding_transform_1.0.weight"
             ]
-            state_dict["embedding_transform_3.0.bias"] = state_dict[
-                "embedding_transform_1.0.bias"
-            ]
+            state_dict["embedding_transform_3.0.bias"] = state_dict["embedding_transform_1.0.bias"]
             state_dict["embedding_transform_3.3.weight"] = state_dict[
                 "embedding_transform_1.3.weight"
             ]
-            state_dict["embedding_transform_3.3.bias"] = state_dict[
-                "embedding_transform_1.3.bias"
-            ]
+            state_dict["embedding_transform_3.3.bias"] = state_dict["embedding_transform_1.3.bias"]
         return state_dict

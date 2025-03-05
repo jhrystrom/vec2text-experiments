@@ -75,9 +75,7 @@ class LLM_Chat:
 
         # cache
         os.makedirs(self.cache_dir, exist_ok=True)
-        prompts_list_dict = {
-            str(i): sorted(v.items()) for i, v in enumerate(prompts_list)
-        }
+        prompts_list_dict = {str(i): sorted(v.items()) for i, v in enumerate(prompts_list)}
         if not self.checkpoint == "gpt-3.5-turbo":
             prompts_list_dict["checkpoint"] = self.checkpoint
         if functions is not None:
@@ -166,18 +164,12 @@ import torch
 
 
 def div(d1: torch.Tensor, d2: torch.Tensor) -> float:
-    return torch.nn.functional.kl_div(
-        d1.log_softmax(0), d2.log_softmax(0), log_target=True
-    ).item()
+    return torch.nn.functional.kl_div(d1.log_softmax(0), d2.log_softmax(0), log_target=True).item()
 
 
 def get_dist_shift(text: str, new_text: str) -> torch.Tensor:
-    t1 = tokenizer([text], padding=False, truncation=False, return_tensors="pt").to(
-        "cuda"
-    )
-    t2 = tokenizer([new_text], padding=False, truncation=False, return_tensors="pt").to(
-        "cuda"
-    )
+    t1 = tokenizer([text], padding=False, truncation=False, return_tensors="pt").to("cuda")
+    t2 = tokenizer([new_text], padding=False, truncation=False, return_tensors="pt").to("cuda")
 
     with torch.no_grad():
         l1 = model(**t1).logits.squeeze(0)
@@ -213,19 +205,12 @@ import concurrent.futures
 
 def bin_diff(d1: torch.Tensor, d2: torch.Tensor) -> float:
     # d1 = d1[:4]; d2=d2[:4];
-    return sum(
-        binary_diff(n1, n2)
-        for n1, n2 in zip(d1.to(torch.float16), d2.to(torch.float16))
-    )
+    return sum(binary_diff(n1, n2) for n1, n2 in zip(d1.to(torch.float16), d2.to(torch.float16)))
 
 
 def get_dist_shift(text: str, new_text: str) -> torch.Tensor:
-    t1 = tokenizer([text], padding=False, truncation=False, return_tensors="pt").to(
-        "cuda"
-    )
-    t2 = tokenizer([new_text], padding=False, truncation=False, return_tensors="pt").to(
-        "cuda"
-    )
+    t1 = tokenizer([text], padding=False, truncation=False, return_tensors="pt").to("cuda")
+    t2 = tokenizer([new_text], padding=False, truncation=False, return_tensors="pt").to("cuda")
 
     with torch.no_grad():
         l1 = model(**t1).logits.squeeze(0)

@@ -63,9 +63,7 @@ def disable_dropout(model: nn.Module):
     dropout_modules = [m for m in model.modules() if isinstance(m, nn.Dropout)]
     for m in dropout_modules:
         m.p = 0.0
-    print(
-        f"Disabled {len(dropout_modules)} dropout modules from model type {type(model)}"
-    )
+    print(f"Disabled {len(dropout_modules)} dropout modules from model type {type(model)}")
 
 
 def freeze_params(model: nn.Module):
@@ -76,9 +74,7 @@ def freeze_params(model: nn.Module):
     # print(f"Froze {total_num_params} params from model type {type(model)}")
 
 
-def mean_pool(
-    hidden_states: torch.Tensor, attention_mask: torch.Tensor
-) -> torch.Tensor:
+def mean_pool(hidden_states: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
     B, S, D = hidden_states.shape
     unmasked_outputs = hidden_states * attention_mask[..., None]
     pooled_outputs = unmasked_outputs.sum(dim=1) / attention_mask.sum(dim=1)[:, None]
@@ -94,9 +90,7 @@ def max_pool(hidden_states: torch.Tensor, attention_mask: torch.Tensor) -> torch
     return pooled_outputs
 
 
-def stack_pool(
-    hidden_states: torch.Tensor, attention_mask: torch.Tensor
-) -> torch.Tensor:
+def stack_pool(hidden_states: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
     B, S, D = hidden_states.shape
     unmasked_outputs = hidden_states * attention_mask[..., None]
     pooled_outputs = unmasked_outputs.reshape((B, S * D))  # stack along seq length
@@ -127,14 +121,10 @@ def load_embedder_and_tokenizer(name: str, torch_dtype: str, **kwargs):
         )
         tokenizer = model.tokenizer
     elif name == "contriever":
-        model = transformers.AutoModel.from_pretrained(
-            "facebook/contriever", **model_kwargs
-        )
+        model = transformers.AutoModel.from_pretrained("facebook/contriever", **model_kwargs)
         tokenizer = transformers.AutoTokenizer.from_pretrained("facebook/contriever")
     elif name == "bert":
-        model = transformers.AutoModel.from_pretrained(
-            "bert-base-uncased", **model_kwargs
-        )
+        model = transformers.AutoModel.from_pretrained("bert-base-uncased", **model_kwargs)
         tokenizer = transformers.AutoTokenizer.from_pretrained("bert-base-uncased")
     elif name == "bert__random_init":
         config = transformers.AutoConfig.from_pretrained("bert-base-uncased")
@@ -144,24 +134,16 @@ def load_embedder_and_tokenizer(name: str, torch_dtype: str, **kwargs):
         model = transformers.AutoModel.from_pretrained(
             "sentence-transformers/gtr-t5-base", **model_kwargs
         ).encoder
-        tokenizer = transformers.AutoTokenizer.from_pretrained(
-            "sentence-transformers/gtr-t5-base"
-        )
+        tokenizer = transformers.AutoTokenizer.from_pretrained("sentence-transformers/gtr-t5-base")
     elif name == "gtr_large":
         model = transformers.AutoModel.from_pretrained(
             "sentence-transformers/gtr-t5-large", **model_kwargs
         ).encoder
-        tokenizer = transformers.AutoTokenizer.from_pretrained(
-            "sentence-transformers/gtr-t5-large"
-        )
+        tokenizer = transformers.AutoTokenizer.from_pretrained("sentence-transformers/gtr-t5-large")
     elif name == "gtr_base__random_init":
-        config = transformers.AutoConfig.from_pretrained(
-            "sentence-transformers/gtr-t5-base"
-        )
+        config = transformers.AutoConfig.from_pretrained("sentence-transformers/gtr-t5-base")
         model = transformers.AutoModel.from_config(config).encoder
-        tokenizer = transformers.AutoTokenizer.from_pretrained(
-            "sentence-transformers/gtr-t5-base"
-        )
+        tokenizer = transformers.AutoTokenizer.from_pretrained("sentence-transformers/gtr-t5-base")
     elif name == "gtr_base_st":
         model = SentenceTransformer("sentence-transformers/gtr-t5-base")
         tokenizer = model.tokenizer
@@ -169,22 +151,16 @@ def load_embedder_and_tokenizer(name: str, torch_dtype: str, **kwargs):
         model = SentenceTransformer("sentence-transformers/gtr-t5-large")
         tokenizer = model.tokenizer
     elif name == "gte_base":
-        model = transformers.AutoModel.from_pretrained(
-            "thenlper/gte-base", **model_kwargs
-        )
-        tokenizer = transformers.AutoTokenizer.from_pretrained(
-            "thenlper/gte-base"
-        )
+        model = transformers.AutoModel.from_pretrained("thenlper/gte-base", **model_kwargs)
+        tokenizer = transformers.AutoTokenizer.from_pretrained("thenlper/gte-base")
     elif name == "gte_base_st":
-        model = SentenceTransformer('thenlper/gte-base')
+        model = SentenceTransformer("thenlper/gte-base")
         tokenizer = model.tokenizer
     elif name == "ance_tele":
         model = transformers.AutoModel.from_pretrained(
             "OpenMatch/ance-tele_nq_psg-encoder", **model_kwargs
         )
-        tokenizer = transformers.AutoTokenizer.from_pretrained(
-            "OpenMatch/ance-tele_nq_psg-encoder"
-        )
+        tokenizer = transformers.AutoTokenizer.from_pretrained("OpenMatch/ance-tele_nq_psg-encoder")
     elif name == "paraphrase-distilroberta":
         model = transformers.AutoModel.from_pretrained(
             "sentence-transformers/paraphrase-distilroberta-base-v1", **model_kwargs
@@ -193,9 +169,7 @@ def load_embedder_and_tokenizer(name: str, torch_dtype: str, **kwargs):
             "sentence-transformers/paraphrase-distilroberta-base-v1"
         )
     elif name == "medicalai/ClinicalBERT":
-        model = transformers.AutoModel.from_pretrained(
-            "medicalai/ClinicalBERT", **model_kwargs
-        )
+        model = transformers.AutoModel.from_pretrained("medicalai/ClinicalBERT", **model_kwargs)
         tokenizer = transformers.AutoTokenizer.from_pretrained("medicalai/ClinicalBERT")
     elif name.startswith("gpt2"):
         model = transformers.AutoModelForCausalLM.from_pretrained(
@@ -246,9 +220,7 @@ def load_embedder_and_tokenizer(name: str, torch_dtype: str, **kwargs):
         model = SentenceTransformer(name)
         tokenizer = model.tokenizer
     elif name.startswith("nomic-ai/nomic-embed-text-v1"):
-        model = SentenceTransformer(
-            "nomic-ai/nomic-embed-text-v1", trust_remote_code=True
-        )
+        model = SentenceTransformer("nomic-ai/nomic-embed-text-v1", trust_remote_code=True)
         tokenizer = model.tokenizer
     else:
         print(f"WARNING: Trying to initialize from unknown embedder {name}")
@@ -259,9 +231,7 @@ def load_embedder_and_tokenizer(name: str, torch_dtype: str, **kwargs):
     return model, tokenizer
 
 
-def load_encoder_decoder(
-    model_name: str, lora: bool = False
-) -> transformers.AutoModelForSeq2SeqLM:
+def load_encoder_decoder(model_name: str, lora: bool = False) -> transformers.AutoModelForSeq2SeqLM:
     model_kwargs: Dict[str, Any] = {
         "low_cpu_mem_usage": True,
     }
@@ -272,9 +242,7 @@ def load_encoder_decoder(
                 "device_map": "auto",
             }
         )
-    return transformers.AutoModelForSeq2SeqLM.from_pretrained(
-        model_name, **model_kwargs
-    )
+    return transformers.AutoModelForSeq2SeqLM.from_pretrained(model_name, **model_kwargs)
 
 
 def load_tokenizer(name: str, max_length: int) -> transformers.PreTrainedTokenizer:

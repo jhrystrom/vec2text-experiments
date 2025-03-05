@@ -29,12 +29,18 @@ class InversionModelDecoderOnly(InversionModel):
     embedder_tokenizer: transformers.PreTrainedTokenizer  # embedder's tokenizer
     decoder: transformers.AutoModelForCausalLM
     tokenizer: transformers.PreTrainedTokenizer  # encoder_decoder's tokenizer
-    embedding_transform: nn.Module  # Module that transformers embedder output into encoder-decoder input
+    embedding_transform: (
+        nn.Module
+    )  # Module that transformers embedder output into encoder-decoder input
     bottleneck_dim: int  # Bottleneck dimension for embedding_transform
     embedder_dim: int  # Hidden dimension of embedding model
     embedder_no_grad: bool  # Disable gradients for embedding model
-    embedder_fake_with_zeros: bool  # Whether to just provide zeros as input for encoder-decoder (unconditional)
-    embedding_transform_strategy: str  # Way to transform bottleneck embedding into input for encoder-decoder
+    embedder_fake_with_zeros: (
+        bool  # Whether to just provide zeros as input for encoder-decoder (unconditional)
+    )
+    embedding_transform_strategy: (
+        str  # Way to transform bottleneck embedding into input for encoder-decoder
+    )
     use_frozen_embeddings_as_input: bool  # Whether to train/evaluate on frozen embeddings
     embedded_tokens: torch.Tensor  # used for decoding
     embedder_model_api: Optional[str]
@@ -60,9 +66,7 @@ class InversionModelDecoderOnly(InversionModel):
                 config.model_name_or_path
             )
         else:
-            decoder = transformers.AutoModelForCausalLM.from_pretrained(
-                config.model_name_or_path
-            )
+            decoder = transformers.AutoModelForCausalLM.from_pretrained(config.model_name_or_path)
         self.embedder = embedder
         self.decoder = decoder
 
@@ -87,9 +91,7 @@ class InversionModelDecoderOnly(InversionModel):
         self.embedder_no_grad = embedder_no_grad
         self.use_frozen_embeddings_as_input = use_frozen_embeddings_as_input
         self.bottleneck_dim = bottleneck_dim
-        self.embedding_transform = nn.Linear(
-            self.embedder_dim, self.decoder.config.hidden_size
-        )
+        self.embedding_transform = nn.Linear(self.embedder_dim, self.decoder.config.hidden_size)
         ######################################################
         self.tokenizer = tokenizer
         self.embedder_tokenizer = embedder_tokenizer
@@ -204,9 +206,7 @@ class InversionModelDecoderOnly(InversionModel):
         )
 
         input_embeddings_table = self.decoder.get_input_embeddings()
-        inputs_embeds = torch.cat(
-            (embed_inputs_embeds, input_embeddings_table(input_ids)), dim=1
-        )
+        inputs_embeds = torch.cat((embed_inputs_embeds, input_embeddings_table(input_ids)), dim=1)
         attention_mask = torch.cat((embed_attention_mask, attention_mask), dim=1)
 
         return self.decoder(

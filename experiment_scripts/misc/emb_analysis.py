@@ -3,6 +3,7 @@ emb(sentence), emb(reorder(sentence)), etc.
 
 Written: 2023-03-05
 """
+
 import sys
 
 sys.path.append("/home/jxm3/research/retrieval/inversion")
@@ -31,13 +32,9 @@ max_seq_length = 128
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def reorder_words_except_padding(
-    input_ids: torch.Tensor, padding_idx: int
-) -> torch.Tensor:
+def reorder_words_except_padding(input_ids: torch.Tensor, padding_idx: int) -> torch.Tensor:
     pad_begin_idxs = (input_ids == padding_idx).int().argmax(dim=1)
-    pad_begin_idxs = torch.where(
-        pad_begin_idxs == 0, input_ids.shape[1], pad_begin_idxs
-    )
+    pad_begin_idxs = torch.where(pad_begin_idxs == 0, input_ids.shape[1], pad_begin_idxs)
 
     # assume there is a cls token if all first words are the same.
     has_cls = len(set(input_ids[:, 0].tolist())) == 1
@@ -118,9 +115,7 @@ def main():
     csf = torch.nn.CosineSimilarity(dim=1)
     cs = lambda a, b: csf(a, b).cpu().tolist()
 
-    model, embedder_tokenizer, tokenizer = load_model_and_tokenizers(
-        model_name=model_name
-    )
+    model, embedder_tokenizer, tokenizer = load_model_and_tokenizers(model_name=model_name)
     model.embedder.to(device)
     dataset = load_nq_dev(tokenizer, embedder_tokenizer)[:n]
 
@@ -130,9 +125,7 @@ def main():
     pbar = tqdm.tqdm(desc="getting embeddings for dataset", colour="#A020F0", total=n)
 
     while i < n:
-        input_ids = torch.tensor(
-            dataset["embedder_input_ids"][i : i + batch_size], device=device
-        )
+        input_ids = torch.tensor(dataset["embedder_input_ids"][i : i + batch_size], device=device)
         attention_mask = torch.tensor(
             dataset["embedder_attention_mask"][i : i + batch_size], device=device
         )

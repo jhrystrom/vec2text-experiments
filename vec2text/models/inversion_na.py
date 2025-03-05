@@ -64,9 +64,7 @@ class InversionModelNonAutoregressive(transformers.PreTrainedModel):
         generation_kwargs: Dict[str, torch.Tensor],
     ) -> torch.Tensor:
         # TODO respect generation kwargs.
-        batch_size, max_length = inputs.get(
-            "input_ids", inputs["embedder_input_ids"]
-        ).shape
+        batch_size, max_length = inputs.get("input_ids", inputs["embedder_input_ids"]).shape
 
         with torch.no_grad():
             logits = self.forward(**inputs)["logits"]
@@ -140,9 +138,7 @@ class InversionModelNonAutoregressive(transformers.PreTrainedModel):
         inputs_embeds = self.encoder.embed_tokens(input_ids)
         # TODO: support & ablate concatenation methods.
         inputs_embeds = torch.cat((embedding[:, None, :], inputs_embeds), dim=1)
-        attention_mask = torch.ones(
-            inputs_embeds.shape[0:2], device=inputs_embeds.device
-        )
+        attention_mask = torch.ones(inputs_embeds.shape[0:2], device=inputs_embeds.device)
         logits = self.masked_lm_logits(
             inputs_embeds=inputs_embeds,
             attention_mask=attention_mask,
@@ -151,10 +147,7 @@ class InversionModelNonAutoregressive(transformers.PreTrainedModel):
         if labels is not None:
             labels = torch.cat(
                 (
-                    -100
-                    * torch.ones(
-                        (batch_size, 1), dtype=labels.dtype, device=labels.device
-                    ),
+                    -100 * torch.ones((batch_size, 1), dtype=labels.dtype, device=labels.device),
                     labels,
                 ),
                 dim=1,

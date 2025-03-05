@@ -30,21 +30,15 @@ def load_trainer(model_args, data_args, training_args) -> Corrector:
 
 def test_trainer():
     dataset_name = "msmarco"
-    parser = transformers.HfArgumentParser(
-        (ModelArguments, DataArguments, TrainingArguments)
-    )
-    model_args, data_args, training_args = parser.parse_args_into_dataclasses(
-        args=DEFAULT_ARGS
-    )
+    parser = transformers.HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
+    model_args, data_args, training_args = parser.parse_args_into_dataclasses(args=DEFAULT_ARGS)
     # TODO parameterize tests with experiment var
     # training_args.experiment = "corrector"
     training_args.experiment = "corrector_encoder"
     training_args.corrector_model_from_pretrained = "jxm/gtr__nq__32"
     model_args.max_seq_length = 32
     data_args.dataset_name = dataset_name
-    trainer = load_trainer(
-        model_args=model_args, data_args=data_args, training_args=training_args
-    )
+    trainer = load_trainer(model_args=model_args, data_args=data_args, training_args=training_args)
     train_result = trainer.train(resume_from_checkpoint=None)
     train_metrics = train_result.metrics
     print("train metrics:", train_metrics)

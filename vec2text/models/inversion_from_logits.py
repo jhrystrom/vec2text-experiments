@@ -26,9 +26,7 @@ class InversionFromLogitsModel(InversionModel):
     def __init__(self, config: InversionConfig):
         super().__init__(config=config)
         # hacky way of checking if model is a pre-trained HF decoder
-        assert ("CausalLM" in str(type(self.embedder))) or (
-            "LMHead" in str(type(self.embedder))
-        )
+        assert ("CausalLM" in str(type(self.embedder))) or ("LMHead" in str(type(self.embedder)))
         encoder_hidden_dim = self.encoder_decoder.config.hidden_size
         self.encoder_hidden_dim = encoder_hidden_dim
         self.embedder_is_decoder = True
@@ -38,8 +36,7 @@ class InversionFromLogitsModel(InversionModel):
             (self.embedder.config.vocab_size + encoder_hidden_dim) % encoder_hidden_dim
         )
         self.num_repeat_tokens = round(
-            (self.embedder.config.vocab_size + self.num_zeros_to_add)
-            / encoder_hidden_dim
+            (self.embedder.config.vocab_size + self.num_zeros_to_add) / encoder_hidden_dim
         )
         self.embedding_transform = nn.Sequential(
             nn.Linear(encoder_hidden_dim, bottleneck_dim),
@@ -115,9 +112,9 @@ class InversionFromLogitsModel(InversionModel):
         if self.training:
             # Update unigram.
             unigram_batch = embeddings.mean(dim=0, keepdim=True)
-            self.unigram.data = self.unigram.data * (
-                1 - self.unigram_beta
-            ) + unigram_batch * (self.unigram_beta)
+            self.unigram.data = self.unigram.data * (1 - self.unigram_beta) + unigram_batch * (
+                self.unigram_beta
+            )
         embeddings -= self.unigram
 
         if self._zero_except_topk is not None:
@@ -167,9 +164,7 @@ class InversionFromLogitsModel(InversionModel):
                 sorted_logits, sorted_indices = logits[j].sort(descending=True)
                 cumulative_probs = sorted_logits.softmax(dim=0).cumsum(dim=0)
                 topp_idxs = sorted_indices[cumulative_probs >= self._emb_top_p]
-                logits[j] = logits[j].scatter(
-                    dim=0, index=topp_idxs, value=logit_filter_value
-                )
+                logits[j] = logits[j].scatter(dim=0, index=topp_idxs, value=logit_filter_value)
 
         if self._emb_temp is not None:
             logits /= self._emb_temp

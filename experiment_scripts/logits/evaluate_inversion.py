@@ -24,12 +24,8 @@ def create_arg_parser():
             "anthropic_toxic_prompts",
         ],
     )
-    parser.add_argument(
-        "--num_samples", type=int, default=200, help="Number of evaluation samples"
-    )
-    parser.add_argument(
-        "--batch_size", type=int, default=32, help="Batch size for 7B model"
-    )
+    parser.add_argument("--num_samples", type=int, default=200, help="Number of evaluation samples")
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size for 7B model")
     return parser
 
 
@@ -60,9 +56,7 @@ def main(args: argparse.ArgumentParser):
         (
             experiment,
             trainer,
-        ) = vec2text.analyze_utils.load_experiment_and_trainer_from_pretrained(
-            args.alias
-        )
+        ) = vec2text.analyze_utils.load_experiment_and_trainer_from_pretrained(args.alias)
     embedder_name = experiment.model_args.embedder_model_name
     assert "7b" in embedder_name
 
@@ -113,12 +107,8 @@ def main(args: argparse.ArgumentParser):
         # td = datasets.load_from_disk("/home/wentingz/.cache/inversion/a92ab1949d136d6c63fde466c2bdadac.arrow")
         # trainer.eval_dataset["one_million_instructions"] = td["validation"]
 
-        eval_dataset = trainer.eval_dataset[args.dataset].remove_columns(
-            "frozen_embeddings"
-        )
-        metrics = trainer.evaluate(
-            eval_dataset=eval_dataset.select(range(args.num_samples))
-        )
+        eval_dataset = trainer.eval_dataset[args.dataset].remove_columns("frozen_embeddings")
+        metrics = trainer.evaluate(eval_dataset=eval_dataset.select(range(args.num_samples)))
         metrics["_eval_args"] = vars(args)
         with open(out_file, "w") as f:
             json.dump(metrics, f)

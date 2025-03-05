@@ -20,13 +20,9 @@ class InversionFromLogitsTrainer(InversionTrainer):
                 inputs=inputs, generation_kwargs=generation_kwargs
             )
         else:
-            return self.model.generate(
-                inputs=inputs, generation_kwargs=generation_kwargs
-            )
+            return self.model.generate(inputs=inputs, generation_kwargs=generation_kwargs)
 
-    def generate_and_check_length(
-        self, inputs: Dict, generation_kwargs: Dict
-    ) -> torch.Tensor:
+    def generate_and_check_length(self, inputs: Dict, generation_kwargs: Dict) -> torch.Tensor:
         with torch.no_grad():
             frozen_embeddings = self.model.call_embedding_model(
                 input_ids=inputs["embedder_input_ids"],
@@ -41,12 +37,8 @@ class InversionFromLogitsTrainer(InversionTrainer):
             generation_kwargs["min_length"] = length
             generation_kwargs["max_length"] = length
 
-            generations = self.model.generate(
-                inputs=inputs, generation_kwargs=generation_kwargs
-            )
-            generations_str = self.tokenizer.batch_decode(
-                generations, skip_special_tokens=True
-            )
+            generations = self.model.generate(inputs=inputs, generation_kwargs=generation_kwargs)
+            generations_str = self.tokenizer.batch_decode(generations, skip_special_tokens=True)
             generation_emb_tokenized = self.embedder_tokenizer(
                 generations_str,
                 return_tensors="pt",
@@ -55,9 +47,7 @@ class InversionFromLogitsTrainer(InversionTrainer):
                 max_length=64,
             ).to(self.args.device)
             with torch.no_grad():
-                new_embeddings = self.model.call_embedding_model(
-                    **generation_emb_tokenized
-                )
+                new_embeddings = self.model.call_embedding_model(**generation_emb_tokenized)
             new_distances = torch.nn.functional.kl_div(
                 frozen_embeddings,
                 new_embeddings,

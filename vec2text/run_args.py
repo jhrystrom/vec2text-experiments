@@ -96,15 +96,11 @@ class ModelArguments:
     )
     config_name: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "Pretrained config name or path if not the same as model_name"
-        },
+        metadata={"help": "Pretrained config name or path if not the same as model_name"},
     )
     tokenizer_name: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "Pretrained tokenizer name or path if not the same as model_name"
-        },
+        metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"},
     )
     cache_dir: Optional[str] = field(
         default=None,
@@ -133,9 +129,7 @@ class ModelArguments:
     )
     num_repeat_tokens: int = field(
         default=16,
-        metadata={
-            "help": "Number of times to repeat embedding along T5 input sequence length."
-        },
+        metadata={"help": "Number of times to repeat embedding along T5 input sequence length."},
     )
     embedding_zero_except_topk: Optional[int] = field(
         default=None,
@@ -151,9 +145,7 @@ class ModelArguments:
     )
     embedder_fake_with_zeros: bool = field(
         default=False,
-        metadata={
-            "help": "Whether to pass all zeros as embedding (and not use DPR at all)"
-        },
+        metadata={"help": "Whether to pass all zeros as embedding (and not use DPR at all)"},
     )
     use_frozen_embeddings_as_input: bool = field(
         default=False,
@@ -214,9 +206,7 @@ class DataArguments:
     )
     use_less_data: int = field(
         default=-1,
-        metadata={
-            "help": {"Use a small amount of the training/eval data (for testing)"}
-        },
+        metadata={"help": {"Use a small amount of the training/eval data (for testing)"}},
     )
 
     def __post_init__(self):
@@ -239,9 +229,7 @@ class TrainingArguments(transformers.TrainingArguments):
     )
     corrector_model_from_pretrained: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "Alias of pre-trained corrector model to train (defined in aliases.py)"
-        },
+        metadata={"help": "Alias of pre-trained corrector model to train (defined in aliases.py)"},
     )
     cheat_on_train_hypotheses: bool = field(
         default=False,
@@ -321,9 +309,7 @@ class TrainingArguments(transformers.TrainingArguments):
 
     save_total_limit: int = 2  # Maximum number of checkpoints to save.
 
-    warmup_steps: int = field(
-        default=4000, metadata={"help": "Number of steps of warmup"}
-    )
+    warmup_steps: int = field(default=4000, metadata={"help": "Number of steps of warmup"})
     logging_steps: int = field(
         default=400, metadata={"help": "Number of steps between logging metrics"}
     )
@@ -333,9 +319,7 @@ class TrainingArguments(transformers.TrainingArguments):
     )
     eval_steps: int = field(
         default=40000,
-        metadata={
-            "help": "Number of steps between eval (will be scaled as if batch size is 32)"
-        },
+        metadata={"help": "Number of steps between eval (will be scaled as if batch size is 32)"},
     )
     mock_embedder: bool = field(
         default=False,
@@ -367,14 +351,10 @@ class TrainingArguments(transformers.TrainingArguments):
     def __post_init__(self):
         super().__post_init__()
         self._frozen = True
-        self.report_to = (
-            ["wandb"] if (self.use_wandb and (self.local_rank <= 0)) else []
-        )
+        self.report_to = ["wandb"] if (self.use_wandb and (self.local_rank <= 0)) else []
         self.dataloader_pin_memory = True
         num_workers = torch.cuda.device_count()
-        os.environ["RAYON_RS_NUM_CPUS"] = str(
-            num_workers
-        )  # Sets threads for hf tokenizers
+        os.environ["RAYON_RS_NUM_CPUS"] = str(num_workers)  # Sets threads for hf tokenizers
         self.dataloader_num_workers = num_workers
         print(f"Set num workers to {num_workers}")
 

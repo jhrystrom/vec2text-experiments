@@ -11,30 +11,38 @@ logger = logging.getLogger(__name__)
 
 class UNetTransform(torch.nn.Module):
     def __init__(
-            self,
-            src_dim: int,
-            target_dim: int,
-        ):
+        self,
+        src_dim: int,
+        target_dim: int,
+    ):
         super().__init__()
-        
+
         import diffusers
+
         self.base = diffusers.UNet2DModel(
-            sample_size=(32, 32), # the target image resolution
-            in_channels=1, # the number of input channels, 3 for RGB images
-            out_channels=1, # the number of output channels
-            layers_per_block=2, # how many ResNet layers to use per UNet block
-            block_out_channels=(128,128,256,256,512,512), # the numbe of output channels for eaxh UNet block
+            sample_size=(32, 32),  # the target image resolution
+            in_channels=1,  # the number of input channels, 3 for RGB images
+            out_channels=1,  # the number of output channels
+            layers_per_block=2,  # how many ResNet layers to use per UNet block
+            block_out_channels=(
+                128,
+                128,
+                256,
+                256,
+                512,
+                512,
+            ),  # the numbe of output channels for eaxh UNet block
             down_block_types=(
-                "DownBlock2D", # a regular ResNet downsampling block
+                "DownBlock2D",  # a regular ResNet downsampling block
                 "DownBlock2D",
                 "DownBlock2D",
                 "DownBlock2D",
-                "AttnDownBlock2D", # a ResNet downsampling block with spatial self-attention
+                "AttnDownBlock2D",  # a ResNet downsampling block with spatial self-attention
                 "DownBlock2D",
             ),
             up_block_types=(
-                "UpBlock2D", # a regular ResNet upsampling block
-                "AttnUpBlock2D", # a ResNet upsampling block with spatial self-attention
+                "UpBlock2D",  # a regular ResNet upsampling block
+                "AttnUpBlock2D",  # a ResNet upsampling block with spatial self-attention
                 "UpBlock2D",
                 "UpBlock2D",
                 "UpBlock2D",
@@ -50,22 +58,20 @@ class UNetTransform(torch.nn.Module):
     def forward(self, x: torch.Tensor):
         batch_size = x.shape[0]
         x = self.in_projection(x).contiguous()
-        x = x[:, None, None, :].reshape(-1, 1, 32, 32) # repeat embedding into an image
+        x = x[:, None, None, :].reshape(-1, 1, 32, 32)  # repeat embedding into an image
         output = self.base(x, timestep=0).contiguous()
         z = output.sample.reshape(batch_size, 1024)
         return self.out_projection(z).contiguous()
-
 
 
 class InversionModelUnet(InversionModel):
     """A class of model that conditions on embeddings from a pre-trained sentence embedding model
     to decode text autoregressively.
     """
+
     def __init__(self, config: InversionConfig):
         super().__init__(config=config)
-        self.unet_transform = UNetTransform(
-            self.embedder_dim, self.embedder_dim
-        )
+        self.unet_transform = UNetTransform(self.embedder_dim, self.embedder_dim)
 
     def embed_and_project(
         self,
@@ -88,7 +94,7 @@ class InversionModelUnet(InversionModel):
                 input_ids=embedder_input_ids,
                 attention_mask=embedder_attention_mask,
             )
-        
+
         # pass embeddings through unet
         embeddings = self.unet_transform(embeddings)
 

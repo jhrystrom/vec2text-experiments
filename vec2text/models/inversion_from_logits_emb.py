@@ -16,9 +16,7 @@ class InversionFromLogitsEmbModel(InversionFromLogitsModel):
             nn.GELU(),
             nn.Linear(self.embedder_dim, self.encoder_hidden_dim),
         )
-        word_embeddings = (
-            self.encoder_decoder.encoder.embed_tokens.weight.detach().clone()
-        )
+        word_embeddings = self.encoder_decoder.encoder.embed_tokens.weight.detach().clone()
         inverter_vocab_size = word_embeddings.shape[0]
         self.num_tokens = num_tokens = 64
         self.num_zeros_to_add = num_zeros_to_add = (
@@ -29,12 +27,8 @@ class InversionFromLogitsEmbModel(InversionFromLogitsModel):
             dtype=torch.float32,
             device=word_embeddings.device,
         )
-        padded_word_embeddings = torch.cat(
-            (word_embeddings, word_embedding_zeros), dim=0
-        )
-        word_embeddings = padded_word_embeddings.reshape(
-            (num_tokens, -1, word_embeddings.shape[1])
-        )
+        padded_word_embeddings = torch.cat((word_embeddings, word_embedding_zeros), dim=0)
+        word_embeddings = padded_word_embeddings.reshape((num_tokens, -1, word_embeddings.shape[1]))
         self.word_embeddings = nn.Parameter(
             word_embeddings,
             requires_grad=False,
@@ -88,17 +82,11 @@ class InversionFromLogitsEmbModel(InversionFromLogitsModel):
             device=embeddings.device,
             dtype=torch.double,
         )
-        mapping = (
-            self.tokenizer_mapping[None]
-            .repeat((batch_size, 1))
-            .to(new_embeddings.device)
-        )
+        mapping = self.tokenizer_mapping[None].repeat((batch_size, 1)).to(new_embeddings.device)
         embeddings = new_embeddings.scatter_add(
             dim=1, index=mapping, src=embeddings.to(torch.double).exp()
         ).log()
-        embeddings = (
-            embeddings.nan_to_num()
-        )  # replace empty values from -inf to tiny neg number
+        embeddings = embeddings.nan_to_num()  # replace empty values from -inf to tiny neg number
 
         if self.training:
             unigram_batch = embeddings.mean(dim=0, keepdim=True)
@@ -107,9 +95,9 @@ class InversionFromLogitsEmbModel(InversionFromLogitsModel):
                 print("INFO: resetting unigram.")
                 self.unigram.data = unigram_batch
             else:
-                self.unigram.data = self.unigram.data * (
-                    1 - self.unigram_beta
-                ) + unigram_batch * (self.unigram_beta)
+                self.unigram.data = self.unigram.data * (1 - self.unigram_beta) + unigram_batch * (
+                    self.unigram_beta
+                )
         embeddings = embeddings - self.unigram
         embeddings = embeddings.nan_to_num(nan=0.0, posinf=0.0, neginf=0.0)
 
@@ -118,9 +106,7 @@ class InversionFromLogitsEmbModel(InversionFromLogitsModel):
             dtype=embeddings.dtype,
             device=embeddings.device,
         )
-        logits = torch.cat((embeddings, logits_zeros), dim=1).to(
-            self.sequence_weights.dtype
-        )
+        logits = torch.cat((embeddings, logits_zeros), dim=1).to(self.sequence_weights.dtype)
         logits = logits.reshape((batch_size, num_tokens, -1))
 
         with torch.no_grad():

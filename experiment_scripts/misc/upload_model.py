@@ -5,7 +5,8 @@ Example usage:
     >> python scripts/upload_model.py openai_msmarco__msl128__200epoch__correct vec2text__openai_ada002__msmarco__msl128__corrector
 
 and you'll have to paste in a HuggingFace.co token that has write access.
- """
+"""
+
 import argparse
 
 from huggingface_hub import login as huggingface_login

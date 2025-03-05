@@ -25,9 +25,7 @@ class DataCollatorForCorrection:
         if return_tensors is None:
             return_tensors = self.return_tensors
         labels = (
-            [feature["labels"] for feature in features]
-            if "labels" in features[0].keys()
-            else None
+            [feature["labels"] for feature in features] if "labels" in features[0].keys() else None
         )
         # We have to pad the labels before calling `tokenizer.pad` as this method won't pad them and needs them of the
         # same length to return tensors.
@@ -42,18 +40,14 @@ class DataCollatorForCorrection:
         padding_side = self.tokenizer.padding_side
 
         if "hypothesis_input_ids" in features[0].keys():
-            max_hypothesis_length = max(
-                map(lambda d: len(d["hypothesis_input_ids"]), features)
-            )
+            max_hypothesis_length = max(map(lambda d: len(d["hypothesis_input_ids"]), features))
         else:
             max_hypothesis_length = 0
         hypothesis_features = []
         regular_features = []
         for feature in features:
             ### pad labels
-            remainder = [self.label_pad_token_id] * (
-                max_label_length - len(feature["labels"])
-            )
+            remainder = [self.label_pad_token_id] * (max_label_length - len(feature["labels"]))
             if isinstance(feature["labels"], list):
                 feature["labels"] = (
                     feature["labels"] + remainder
@@ -61,13 +55,9 @@ class DataCollatorForCorrection:
                     else remainder + feature["labels"]
                 )
             elif padding_side == "right":
-                feature["labels"] = np.concatenate(
-                    [feature["labels"], remainder]
-                ).astype(np.int64)
+                feature["labels"] = np.concatenate([feature["labels"], remainder]).astype(np.int64)
             else:
-                feature["labels"] = np.concatenate(
-                    [remainder, feature["labels"]]
-                ).astype(np.int64)
+                feature["labels"] = np.concatenate([remainder, feature["labels"]]).astype(np.int64)
             #### add to lists
             regular_features.append(
                 {k: v for k, v in feature.items() if not k.startswith("hypothesis_")}
@@ -97,9 +87,7 @@ class DataCollatorForCorrection:
                 pad_to_multiple_of=self.pad_to_multiple_of,
                 return_tensors=return_tensors,
             )
-            hypothesis_features = {
-                f"hypothesis_{k}": v for k, v in hypothesis_features.items()
-            }
+            hypothesis_features = {f"hypothesis_{k}": v for k, v in hypothesis_features.items()}
             return {**new_features, **hypothesis_features}
         else:
             return new_features

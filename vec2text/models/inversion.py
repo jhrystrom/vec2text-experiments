@@ -33,13 +33,21 @@ class InversionModel(transformers.PreTrainedModel):
     encoder_decoder: transformers.AutoModelForSeq2SeqLM
     encoder_decoder_lora: bool  # Whether to use LoRA for the encoder-decoder model
     tokenizer: transformers.PreTrainedTokenizer  # encoder_decoder's tokenizer
-    embedding_transform: nn.Module  # Module that transformers embedder output into encoder-decoder input
+    embedding_transform: (
+        nn.Module
+    )  # Module that transformers embedder output into encoder-decoder input
     bottleneck_dim: int  # Bottleneck dimension for embedding_transform
-    num_repeat_tokens: int  # Sequence length for repeating embedder embedding for encoder-decoder input
+    num_repeat_tokens: (
+        int  # Sequence length for repeating embedder embedding for encoder-decoder input
+    )
     embedder_dim: int  # Hidden dimension of embedding model
     embedder_no_grad: bool  # Disable gradients for embedding model
-    embedder_fake_with_zeros: bool  # Whether to just provide zeros as input for encoder-decoder (unconditional)
-    embedding_transform_strategy: str  # Way to transform bottleneck embedding into input for encoder-decoder
+    embedder_fake_with_zeros: (
+        bool  # Whether to just provide zeros as input for encoder-decoder (unconditional)
+    )
+    embedding_transform_strategy: (
+        str  # Way to transform bottleneck embedding into input for encoder-decoder
+    )
     use_frozen_embeddings_as_input: bool  # Whether to train/evaluate on frozen embeddings
     embedded_tokens: torch.Tensor  # used for decoding
     embedder_model_api: Optional[str]
@@ -213,9 +221,7 @@ class InversionModel(transformers.PreTrainedModel):
             embeddings = self._process_embedder_output(model_output, attention_mask)
 
         if self.training and self.noise_level > 0:
-            embeddings += self.noise_level * torch.randn(
-                embeddings.shape, device=embeddings.device
-            )
+            embeddings += self.noise_level * torch.randn(embeddings.shape, device=embeddings.device)
         return embeddings
 
     def embed_and_project(

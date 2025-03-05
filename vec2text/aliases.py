@@ -76,7 +76,5 @@ def load_experiment_and_trainer_from_alias(
 
 
 def load_model_from_alias(alias: str, max_seq_length: int = None):
-    _, trainer = load_experiment_and_trainer_from_alias(
-        alias, max_seq_length=max_seq_length
-    )
+    _, trainer = load_experiment_and_trainer_from_alias(alias, max_seq_length=max_seq_length)
     return trainer.model

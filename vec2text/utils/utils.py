@@ -19,9 +19,7 @@ def emb(
     model: torch.nn.Module, input_ids: torch.Tensor, attention_mask: torch.Tensor
 ) -> torch.Tensor:
     with torch.no_grad():
-        emb = model.call_embedding_model(
-            input_ids=input_ids, attention_mask=attention_mask
-        )
+        emb = model.call_embedding_model(input_ids=input_ids, attention_mask=attention_mask)
     return emb
 
 
@@ -57,9 +55,7 @@ def embed_all_tokens(model: torch.nn.Module, tokenizer: transformers.AutoTokeniz
     assert SEP is not None
     #
     device = next(model.parameters()).device
-    pbar = tqdm.tqdm(
-        desc="generating token embeddings", colour="#008080", total=V, leave=False
-    )
+    pbar = tqdm.tqdm(desc="generating token embeddings", colour="#008080", total=V, leave=False)
     while i < V:
         #
         minibatch_size = min(V - i, batch_size)
@@ -88,9 +84,7 @@ def embed_all_tokens(model: torch.nn.Module, tokenizer: transformers.AutoTokeniz
     all_token_embeddings_tensor: torch.Tensor = torch.stack(all_token_embeddings)
     assert all_token_embeddings_tensor.shape == (tokenizer.vocab_size, 768)
 
-    all_token_embeddings_tensor /= all_token_embeddings_tensor.norm(
-        p=2, dim=1, keepdim=True
-    )
+    all_token_embeddings_tensor /= all_token_embeddings_tensor.norm(p=2, dim=1, keepdim=True)
     return all_token_embeddings_tensor
 
 
@@ -124,7 +118,6 @@ def torch_main_worker_finish_first(func: Callable):
 def dataset_map_multi_worker(
     dataset: datasets.Dataset, map_fn: Callable, *args, **kwargs
 ) -> datasets.Dataset:
-
     try:
         rank = torch.distributed.get_rank()
         world_size = torch.distributed.get_world_size()
@@ -135,9 +128,7 @@ def dataset_map_multi_worker(
         return dataset.map(map_fn, *args, **kwargs)
     datasets.disable_caching()
 
-    cache_path = os.environ.get(
-        "VEC2TEXT_CACHE", os.path.expanduser("~/.cache/inversion")
-    )
+    cache_path = os.environ.get("VEC2TEXT_CACHE", os.path.expanduser("~/.cache/inversion"))
     ds_shard_filepaths = [
         os.path.join(cache_path, f"{dataset._fingerprint}_subshard_{w}.cache")
         for w in range(0, world_size)
@@ -182,9 +173,7 @@ def get_manifest_global():
 
 
 @retry(wait=wait_fixed(1), stop=stop_after_attempt(15))
-def get_embeddings_openai_manifest(
-    text_list, model="text-embedding-ada-002"
-) -> np.ndarray:
+def get_embeddings_openai_manifest(text_list, model="text-embedding-ada-002") -> np.ndarray:
     # embeddings model: https://platform.openai.com/docs/guides/embeddings/use-cases
     #    api ref: https://platform.openai.com/docs/api-reference/embeddings/create
     # TODO: set up a caching system somehow.
@@ -196,9 +185,7 @@ def get_embeddings_openai_manifest(
 
 
 @retry(wait=wait_fixed(1), stop=stop_after_attempt(10))
-def get_embeddings_openai_vanilla_multithread(
-    text_list, model="text-embedding-ada-002"
-) -> list:
+def get_embeddings_openai_vanilla_multithread(text_list, model="text-embedding-ada-002") -> list:
     from openai import OpenAI
 
     client = OpenAI()
@@ -279,18 +266,14 @@ class MockEmbedder:
     def __init__(self, embedder_dim: int):
         self.embedder_dim = embedder_dim
 
-    def forward(
-        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
-    ) -> torch.Tensor:
+    def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         return torch.zeros(
             (input_ids.shape[0], input_ids.shape[1], self.embedder_dim),
             dtype=torch.float32,
             device=input_ids.device,
         )
 
-    def __call__(
-        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
-    ) -> torch.Tensor:
+    def __call__(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         return torch.zeros(
             (input_ids.shape[0], input_ids.shape[1], self.embedder_dim),
             dtype=torch.float32,

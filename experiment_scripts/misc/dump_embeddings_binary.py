@@ -45,9 +45,7 @@ def emb_to_binary(emb: np.ndarray) -> np.ndarray:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Get embeddings from a pre-trained model"
-    )
+    parser = argparse.ArgumentParser(description="Get embeddings from a pre-trained model")
     parser.add_argument(
         "--model_name",
         type=str,
@@ -118,9 +116,7 @@ def main():
         #
         # tokenize text
         text = vd[i : i + batch_size]["text"]
-        tt = t(
-            text, truncation=True, padding=True, max_length=msl, return_tensors="pt"
-        ).to(device)
+        tt = t(text, truncation=True, padding=True, max_length=msl, return_tensors="pt").to(device)
         #
         # feed to model
         with torch.no_grad():
@@ -139,22 +135,18 @@ def main():
         i += batch_size
         pbar.update(batch_size)
 
-    all_hidden_states = {
-        k: torch.cat(v, dim=0).numpy() for k, v in all_hidden_states.items()
-    }
+    all_hidden_states = {k: torch.cat(v, dim=0).numpy() for k, v in all_hidden_states.items()}
 
     # add mean pooling as "last layer"
-    all_hidden_states[len(all_hidden_states)] = all_hidden_states[
-        len(all_hidden_states) - 1
-    ].mean(axis=1, keepdims=True)
+    all_hidden_states[len(all_hidden_states)] = all_hidden_states[len(all_hidden_states) - 1].mean(
+        axis=1, keepdims=True
+    )
 
     # convert all floats to binary :-)
     binary_hidden_states = {k: emb_to_binary(v) for k, v in all_hidden_states.items()}
 
     # average over dataset to produce probability heatmap
-    hidden_states_heatmaps = {
-        k: v.mean(axis=0) for k, v in binary_hidden_states.items()
-    }
+    hidden_states_heatmaps = {k: v.mean(axis=0) for k, v in binary_hidden_states.items()}
 
     # compute bits from probabilities
     hidden_states_bits = {
@@ -173,9 +165,7 @@ def main():
                     bit_value = layer_data[seq, emb_dim, bit]
                     data.append([layer_idx, seq, emb_dim, bit, bit_value])
 
-    df = pd.DataFrame(
-        data, columns=["layer", "sequence", "embedding_dim", "bit_idx", "bit_value"]
-    )
+    df = pd.DataFrame(data, columns=["layer", "sequence", "embedding_dim", "bit_idx", "bit_value"])
     # for n,v in vars(args).items():
     #     df[n] = v
     df.to_pickle(open(out_path, "wb"))

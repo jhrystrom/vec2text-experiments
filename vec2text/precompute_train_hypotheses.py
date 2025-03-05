@@ -36,7 +36,9 @@ def gather():
             f"/home/jxm3/research/retrieval/inversion/msmarco_msl128_hypotheses/msmarco_{n_samples}_*"
         )
     )
-    gathered_dataset_path = "/home/jxm3/research/retrieval/inversion/msmarco_msl128_hypotheses/msmarco_full.cache"
+    gathered_dataset_path = (
+        "/home/jxm3/research/retrieval/inversion/msmarco_msl128_hypotheses/msmarco_full.cache"
+    )
     datasets_list = []
     print(f"found {len(files)} files to concatenate.")
     print(f"\t first three: {files[:3]}")
@@ -52,9 +54,7 @@ def gather():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="precompute MSMARCO hypotheses")
     parser.add_argument("--start_idx", type=int, required=True, help="Starting index")
-    parser.add_argument(
-        "--num_samples", type=int, required=True, help="Number of samples"
-    )
+    parser.add_argument("--num_samples", type=int, required=True, help="Number of samples")
     parser.add_argument(
         "--work",
         type=str,

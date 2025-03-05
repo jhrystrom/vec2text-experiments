@@ -29,20 +29,16 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "black",
-    "flake8",
-    "isort",
+    "ruff",
     "mypy",
 ]
 
 [tool.setuptools]
 packages = {find = {}}
 
-[tool.black]
+[tool.ruff]
 line-length = 100
 
-[tool.isort]
-profile = "black"
 
 [tool.mypy]
 strict = false
@@ -52,11 +48,6 @@ implicit_reexport = true
 module = "tests.*"
 disallow_untyped_decorators = false
 implicit_reexport = true
-
-[tool.flake8]
-ignore = ["N801", "E203", "E266", "E501", "W503", "F812", "E741", "N803", "N802", "N806"]
-max-line-length = 100
-exclude = [".git", "__pycache__", "build", "dist", "tests"]
 
 [dependency-groups]
 test = [

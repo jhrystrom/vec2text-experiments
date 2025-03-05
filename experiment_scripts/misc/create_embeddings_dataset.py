@@ -102,12 +102,8 @@ def main():
     datasets.disable_caching()
     args = parse_args()
 
-    embedderA, tokenizerA = load_embedder_and_tokenizer(
-        args.embedderA, torch_dtype=torch.float32
-    )
-    embedderB, tokenizerB = load_embedder_and_tokenizer(
-        args.embedderB, torch_dtype=torch.float32
-    )
+    embedderA, tokenizerA = load_embedder_and_tokenizer(args.embedderA, torch_dtype=torch.float32)
+    embedderB, tokenizerB = load_embedder_and_tokenizer(args.embedderB, torch_dtype=torch.float32)
 
     full_name = "__".join((args.dataset, args.embedderA, args.embedderB))
 
@@ -126,9 +122,7 @@ def main():
         dataset,
         batched=True,
         batch_size=1000,
-        map_fn=functools.partial(
-            tokenize, tokenizerA=tokenizerA, tokenizerB=tokenizerB
-        ),
+        map_fn=functools.partial(tokenize, tokenizerA=tokenizerA, tokenizerB=tokenizerB),
         num_proc=len(os.sched_getaffinity(0)),
     )
 

@@ -18,9 +18,7 @@ class InversionTrainerNonAutoregressive(BaseTrainer):
     def generate(self, inputs: Dict, generation_kwargs: Dict) -> torch.Tensor:
         return self.model.generate(inputs=inputs, generation_kwargs=generation_kwargs)
 
-    def evaluation_loop(
-        self, *args, **kwargs
-    ) -> transformers.trainer_utils.EvalLoopOutput:
+    def evaluation_loop(self, *args, **kwargs) -> transformers.trainer_utils.EvalLoopOutput:
         """
         Run evaluation and returns metrics.
 

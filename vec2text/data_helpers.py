@@ -10,9 +10,7 @@ from vec2text.run_args import DataArguments
 from vec2text.utils import dataset_map_multi_worker, get_num_proc
 
 
-def retain_dataset_columns(
-    d: datasets.Dataset, allowed_columns: List[str]
-) -> datasets.Dataset:
+def retain_dataset_columns(d: datasets.Dataset, allowed_columns: List[str]) -> datasets.Dataset:
     column_names_to_remove = [c for c in d.features if c not in allowed_columns]
     return d.remove_columns(column_names_to_remove)
 
@@ -152,9 +150,7 @@ def load_beir_corpus(name: str) -> List[str]:
     #### Download scifact.zip dataset and unzip the dataset
     beir_datasets_cache_dir = "/home/jxm3/research/retrieval/distractor_exp"
 
-    url = "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{}.zip".format(
-        name
-    )
+    url = "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{}.zip".format(name)
     out_dir = os.path.join(beir_datasets_cache_dir, "datasets")
     data_path = beir_util.download_and_unzip(url, out_dir)
 
@@ -184,9 +180,7 @@ def load_beir_corpus(name: str) -> List[str]:
         random.shuffle(full_corpus)
         return full_corpus[:MAX_N]
     else:
-        corpus, _queries, _qrels = GenericDataLoader(data_folder=data_path).load(
-            split="test"
-        )
+        corpus, _queries, _qrels = GenericDataLoader(data_folder=data_path).load(split="test")
         corpus = [k["text"] for k in corpus.values()]
         return corpus[:MAX_N]
 
@@ -201,9 +195,7 @@ def load_beir_dataset(name: str) -> datasets.Dataset:
         logging.info("Loading BEIR dataset %s path %s", dataset_path)
         dataset = datasets.load_from_disk(dataset_path)
     else:
-        logging.info(
-            "Loading BEIR dataset %s from JSON (slow) at path %s", dataset_path
-        )
+        logging.info("Loading BEIR dataset %s from JSON (slow) at path %s", dataset_path)
         corpus = load_beir_corpus(name=name)
         dataset = datasets.Dataset.from_list([{"text": t} for t in corpus])
         os.makedirs(os.path.join(cache_path, "emb_inv_beir"), exist_ok=True)

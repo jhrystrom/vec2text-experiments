@@ -1,4 +1,4 @@
-""" Reads embeddings from a file, converts to binary and writes binary strings to a text file in a folder.
+"""Reads embeddings from a file, converts to binary and writes binary strings to a text file in a folder.
 
 Written: 2023-03-14
 """
@@ -17,9 +17,7 @@ num_workers = len(os.sched_getaffinity(0))
 
 def parse_args() -> argparse.ArgumentParser:
     # Initialize the ArgumentParser object
-    parser = argparse.ArgumentParser(
-        description="Get embeddings from a pre-trained model"
-    )
+    parser = argparse.ArgumentParser(description="Get embeddings from a pre-trained model")
     parser.add_argument(
         "--embeddings_file",
         "--e",
@@ -28,9 +26,7 @@ def parse_args() -> argparse.ArgumentParser:
         help="The file to load embeddings from",
     )
     args = parser.parse_args()
-    assert os.path.exists(
-        args.embeddings_file
-    ), f"file not found {args.embeddings_file}"
+    assert os.path.exists(args.embeddings_file), f"file not found {args.embeddings_file}"
     return args
 
 
@@ -74,9 +70,7 @@ def main():
         # binary to hex char: stackoverflow.com/a/7397689/2287177
         emb_str_int = int(emb_str, 2)
         emb_str_total_bytes = (emb_str_int.bit_length() + 7) // 8
-        emb_str_bytes = emb_str_int.to_bytes(
-            length=emb_str_total_bytes, byteorder="big"
-        )
+        emb_str_bytes = emb_str_int.to_bytes(length=emb_str_total_bytes, byteorder="big")
         #
         open(os.path.join(out_folder, f"{i}.txt"), "w").write(emb_str)
         out_file_full.write(emb_str + "\n")

@@ -47,19 +47,13 @@ os.environ["TOKENIZERS_PARALLELISM"] = "False"
 # os.environ["TOKENIZERS_PARALLELISM"] = "True"
 
 device = torch.device(
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
+    "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 )
 logger = logging.getLogger(__name__)
 
 # We maintain our own cache because huggingface datasets caching
 # doesn't always work properly.
-DATASET_CACHE_PATH = os.environ.get(
-    "VEC2TEXT_CACHE", os.path.expanduser("~/.cache/inversion")
-)
+DATASET_CACHE_PATH = os.environ.get("VEC2TEXT_CACHE", os.path.expanduser("~/.cache/inversion"))
 
 
 # Noisy compilation from torch.compile
@@ -168,9 +162,7 @@ class Experiment(abc.ABC):
 
         # Save model_args and data_args before training. Trainer will save training_args.
         if training_args.local_rank <= 0:
-            torch.save(
-                self.data_args, os.path.join(training_args.output_dir, "data_args.bin")
-            )
+            torch.save(self.data_args, os.path.join(training_args.output_dir, "data_args.bin"))
             torch.save(
                 self.model_args,
                 os.path.join(training_args.output_dir, "model_args.bin"),
@@ -208,25 +200,16 @@ class Experiment(abc.ABC):
     def _get_checkpoint(self) -> Optional[str]:
         training_args = self.training_args
         last_checkpoint = None
-        if (
-            os.path.isdir(training_args.output_dir)
-            and not training_args.overwrite_output_dir
-        ):
+        if os.path.isdir(training_args.output_dir) and not training_args.overwrite_output_dir:
             last_checkpoint = transformers.trainer_utils.get_last_checkpoint(
                 training_args.output_dir
             )
-            if (
-                last_checkpoint is None
-                and len(os.listdir(training_args.output_dir)) > 0
-            ):
+            if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
                 raise ValueError(
                     f"Output directory ({training_args.output_dir}) already exists and is not empty. "
                     "Use --overwrite_output_dir to overcome."
                 )
-            elif (
-                last_checkpoint is not None
-                and training_args.resume_from_checkpoint is None
-            ):
+            elif last_checkpoint is not None and training_args.resume_from_checkpoint is None:
                 logger.info(
                     f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change "
                     "the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
@@ -264,9 +247,7 @@ class Experiment(abc.ABC):
 
     @property
     def _is_main_worker(self) -> bool:
-        return (self.training_args.local_rank <= 0) and (
-            int(os.environ.get("LOCAL_RANK", 0)) <= 0
-        )
+        return (self.training_args.local_rank <= 0) and (int(os.environ.get("LOCAL_RANK", 0)) <= 0)
 
     @property
     @abc.abstractmethod
@@ -296,9 +277,7 @@ class Experiment(abc.ABC):
             )
             training_args = vars(self.training_args)
             # deepspeed kwargs are not json serializable
-            training_args = {
-                k: v for k, v in training_args.items() if "deepspeed" not in k
-            }
+            training_args = {k: v for k, v in training_args.items() if "deepspeed" not in k}
             wandb.config.update(
                 {
                     **vars(self.model_args),
@@ -382,13 +361,9 @@ class Experiment(abc.ABC):
             for key in raw_datasets:
                 new_length = min(len(raw_datasets[key]), data_args.use_less_data)
                 raw_datasets[key] = raw_datasets[key].select(range(new_length))
-        print(
-            ">> using fast tokenizers:", tokenizer.is_fast, embedder_tokenizer.is_fast
-        )
+        print(">> using fast tokenizers:", tokenizer.is_fast, embedder_tokenizer.is_fast)
 
-        tokenize_fn = (
-            tokenize_function_llama_chat if self.is_llama_chat else tokenize_function
-        )
+        tokenize_fn = tokenize_function_llama_chat if self.is_llama_chat else tokenize_function
         for key in raw_datasets:
             raw_datasets[key] = dataset_map_multi_worker(
                 dataset=raw_datasets[key],
@@ -399,8 +374,7 @@ class Experiment(abc.ABC):
                     self.model_args.max_seq_length,
                     padding=False,
                     prefix="search_document"
-                    if self.model_args.embedder_model_name
-                    == "nomic-ai/nomic-embed-text-v1"
+                    if self.model_args.embedder_model_name == "nomic-ai/nomic-embed-text-v1"
                     else None,
                 ),
                 batched=True,
@@ -424,9 +398,7 @@ class Experiment(abc.ABC):
 
             new_tokenized_datasets = {}
             for key, d in tokenized_datasets.items():
-                new_fingerprint = (
-                    d._fingerprint + md5_hash_kwargs(**self.dataset_kwargs) + ""
-                )
+                new_fingerprint = d._fingerprint + md5_hash_kwargs(**self.dataset_kwargs) + ""
                 print("\tsaving precomputed embeddings to file:", new_fingerprint)
                 new_tokenized_datasets[key] = dataset_map_multi_worker(
                     dataset=d,
@@ -460,17 +432,13 @@ class Experiment(abc.ABC):
     ) -> datasets.DatasetDict:
         for name, dataset in val_datasets_dict.items():
             max_eval_samples = min(len(dataset), self.data_args.max_eval_samples)
-            val_datasets_dict[name] = val_datasets_dict[name].select(
-                range(max_eval_samples)
-            )
+            val_datasets_dict[name] = val_datasets_dict[name].select(range(max_eval_samples))
             val_datasets_dict[name] = val_datasets_dict[name].add_column(
                 "idx", range(len(val_datasets_dict[name]))
             )
             val_datasets_dict[name].set_format("pt")
 
-        tokenize_fn = (
-            tokenize_function_llama_chat if self.is_llama_chat else tokenize_function
-        )
+        tokenize_fn = tokenize_function_llama_chat if self.is_llama_chat else tokenize_function
         for key in val_datasets_dict:
             val_datasets_dict[key] = dataset_map_multi_worker(
                 dataset=val_datasets_dict[key],
@@ -502,9 +470,7 @@ class Experiment(abc.ABC):
                     map_fn=functools.partial(embed_dataset_batch, model),
                     batched=True,
                     batch_size=self.training_args.per_device_train_batch_size,
-                    new_fingerprint=(
-                        d._fingerprint + md5_hash_kwargs(**self.dataset_kwargs) + ""
-                    ),
+                    new_fingerprint=(d._fingerprint + md5_hash_kwargs(**self.dataset_kwargs) + ""),
                     num_proc=1,
                 )
             val_datasets_dict = datasets.DatasetDict(new_tokenized_datasets)
@@ -561,9 +527,7 @@ class Experiment(abc.ABC):
             DATASET_CACHE_PATH, (md5_hash_kwargs(**train_dataset_kwargs) + ".arrow")
         )
         # Optionally set a train dataset path override
-        train_dataset_path = os.environ.get(
-            "VEC2TEXT_TRAIN_DATASET_PATH", train_dataset_path
-        )
+        train_dataset_path = os.environ.get("VEC2TEXT_TRAIN_DATASET_PATH", train_dataset_path)
         if os.path.exists(train_dataset_path):
             print("loading train dataset from path:", train_dataset_path)
             train_datasets = datasets.load_from_disk(train_dataset_path)
@@ -580,9 +544,7 @@ class Experiment(abc.ABC):
             )
         ######################################################################
         val_dataset_kwargs = {
-            "dataset_name": "__".join(
-                ["ag_news", "arxiv", "xsum_doc", "xsum_summ", "wikibio"]
-            ),
+            "dataset_name": "__".join(["ag_news", "arxiv", "xsum_doc", "xsum_summ", "wikibio"]),
             **dataset_kwargs,
         }
         val_dataset_path = os.path.join(
@@ -605,9 +567,7 @@ class Experiment(abc.ABC):
         train_dataset = train_datasets["train"]
 
         for key in val_datasets_dict:
-            new_length = min(
-                len(val_datasets_dict[key]), self.data_args.max_eval_samples
-            )
+            new_length = min(len(val_datasets_dict[key]), self.data_args.max_eval_samples)
             val_datasets_dict[key] = val_datasets_dict[key].select(range(new_length))
 
         return (train_dataset, val_datasets_dict)
@@ -783,9 +743,7 @@ class CorrectorExperiment(Experiment):
             model=model,
             inversion_trainer=inversion_trainer,
             args=self.training_args,
-            data_collator=DataCollatorForCorrection(
-                tokenizer=inversion_trainer.model.tokenizer
-            ),
+            data_collator=DataCollatorForCorrection(tokenizer=inversion_trainer.model.tokenizer),
         )
 
     def load_model(self, inversion_trainer) -> transformers.PreTrainedModel:

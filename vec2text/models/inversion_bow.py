@@ -78,9 +78,7 @@ class InversionModelBagOfWords(transformers.PreTrainedModel):
         hidden_state = outputs.last_hidden_state
         return mean_pool(hidden_state, attention_mask)
 
-    def bow_logits(
-        self, inputs_embeds: torch.Tensor, attention_mask: torch.Tensor
-    ) -> torch.Tensor:
+    def bow_logits(self, inputs_embeds: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         outputs = self.encoder(
             inputs_embeds=inputs_embeds,
             attention_mask=attention_mask,
@@ -103,9 +101,7 @@ class InversionModelBagOfWords(transformers.PreTrainedModel):
         vocab_size = self.encoder.get_input_embeddings().weight.shape[0]
         vocab = torch.arange(vocab_size, dtype=labels.dtype, device=labels.device)
         one_hot_labels = (labels[:, :, None] == vocab[None, :]).any(dim=1).float()
-        return torch.nn.functional.binary_cross_entropy_with_logits(
-            logits, one_hot_labels
-        )
+        return torch.nn.functional.binary_cross_entropy_with_logits(logits, one_hot_labels)
 
     def forward(
         self,
@@ -132,9 +128,7 @@ class InversionModelBagOfWords(transformers.PreTrainedModel):
         inputs_embeds = self.encoder.embed_tokens(input_ids)
         # TODO: support & ablate concatenation methods.
         inputs_embeds = torch.cat((embedding[:, None, :], inputs_embeds), dim=1)
-        attention_mask = torch.ones(
-            inputs_embeds.shape[0:2], device=inputs_embeds.device
-        )
+        attention_mask = torch.ones(inputs_embeds.shape[0:2], device=inputs_embeds.device)
         logits = self.bow_logits(
             inputs_embeds=inputs_embeds,
             attention_mask=attention_mask,
@@ -143,10 +137,7 @@ class InversionModelBagOfWords(transformers.PreTrainedModel):
         if labels is not None:
             labels = torch.cat(
                 (
-                    -100
-                    * torch.ones(
-                        (batch_size, 1), dtype=labels.dtype, device=labels.device
-                    ),
+                    -100 * torch.ones((batch_size, 1), dtype=labels.dtype, device=labels.device),
                     labels,
                 ),
                 dim=1,

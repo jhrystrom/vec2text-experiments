@@ -31,9 +31,7 @@ class InversionTrainer(BaseTrainer):
         # self.log({ f"train/{k}": v for k,v in metrics.items() })
         return super().training_step(model, inputs)
 
-    def evaluation_loop(
-        self, *args, **kwargs
-    ) -> transformers.trainer_utils.EvalLoopOutput:
+    def evaluation_loop(self, *args, **kwargs) -> transformers.trainer_utils.EvalLoopOutput:
         """
         Run evaluation and returns metrics.
 
@@ -68,7 +66,5 @@ class InversionTrainer(BaseTrainer):
             state_dict["embedding_transform.3.weight"] = state_dict.pop(
                 "embedding_transform.2.weight"
             )
-            state_dict["embedding_transform.3.bias"] = state_dict.pop(
-                "embedding_transform.2.bias"
-            )
+            state_dict["embedding_transform.3.bias"] = state_dict.pop("embedding_transform.2.bias")
         return state_dict

@@ -58,9 +58,7 @@ class NoisySentenceBERT(models.SentenceBERT):
         return self._inject_noise(encodings)
 
 
-def evaluate(
-    model_name: str, noise_level: float, dataset: str, max_seq_length: int = None
-):
+def evaluate(model_name: str, noise_level: float, dataset: str, max_seq_length: int = None):
     model_name_str = model_name.replace("/", "_").replace("-", "_")
     save_path = os.path.join(
         results_dir, f"retrieval_noisy__{model_name_str}__{dataset}__{noise_level}"
@@ -103,9 +101,7 @@ def evaluate(
     results = retriever.retrieve(corpus, queries)
 
     #### Evaluate your model with NDCG@k, MAP@K, Recall@K and Precision@K  where k = [1,3,5,10,100,1000]
-    ndcg, _map, recall, precision = retriever.evaluate(
-        qrels, results, retriever.k_values
-    )
+    ndcg, _map, recall, precision = retriever.evaluate(qrels, results, retriever.k_values)
     metrics = {
         "ndcg": ndcg,
         "_map": _map,
@@ -143,9 +139,7 @@ if __name__ == "__main__":
         default="scifact",
         help="Name of the dataset (default: scifact)",
     )
-    parser.add_argument(
-        "--max_seq_length", type=int, default=None, help="max sequence length"
-    )
+    parser.add_argument("--max_seq_length", type=int, default=None, help="max sequence length")
 
     args = parser.parse_args()
     if args.dataset == "all":
@@ -161,15 +155,11 @@ if __name__ == "__main__":
         all_metrics = []
         for dataset in all_datasets:
             all_metrics.append(
-                evaluate(
-                    args.model, args.noise, dataset, max_seq_length=args.max_seq_length
-                )
+                evaluate(args.model, args.noise, dataset, max_seq_length=args.max_seq_length)
             )
         ###########################################################
         df = pd.DataFrame(all_metrics)
         df.to_parquet(save_path)
         ###########################################################
     else:
-        evaluate(
-            args.model, args.noise, args.dataset, max_seq_length=args.max_seq_length
-        )
+        evaluate(args.model, args.noise, args.dataset, max_seq_length=args.max_seq_length)

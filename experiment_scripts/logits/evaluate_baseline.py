@@ -17,9 +17,7 @@ print("** DISABLED HF DATASETS CACHING **")
 def create_arg_parser():
     parser = argparse.ArgumentParser(description="Argument Parser")
 
-    parser.add_argument(
-        "alias", type=str, help="baseline name", choices=["jailbreak", "fewshot"]
-    )
+    parser.add_argument("alias", type=str, help="baseline name", choices=["jailbreak", "fewshot"])
     parser.add_argument(
         "--prompt",
         type=str,
@@ -27,12 +25,8 @@ def create_arg_parser():
         help="key for prompt to use:",
         default="00_output_simple",
     )
-    parser.add_argument(
-        "--max_seq_length", type=int, default=64, help="Maximum sequence length"
-    )
-    parser.add_argument(
-        "--num_samples", type=int, default=200, help="Number of evaluation samples"
-    )
+    parser.add_argument("--max_seq_length", type=int, default=64, help="Maximum sequence length")
+    parser.add_argument("--num_samples", type=int, default=200, help="Number of evaluation samples")
     parser.add_argument(
         "--embedder_model_name",
         type=str,
@@ -101,15 +95,11 @@ def main(args: argparse.ArgumentParser):
         trainer._gpt_version = args.gpt_version
     else:
         raise ValueError(f"unknown alias {args.alias}")
-    trainer.args.per_device_eval_batch_size = (
-        4 if "13b" in args.embedder_model_name else 32
-    )
+    trainer.args.per_device_eval_batch_size = 4 if "13b" in args.embedder_model_name else 32
     trainer.enable_emb_cos_sim_metric()
 
     eval_dataset = trainer.eval_dataset[args.dataset]
-    metrics = trainer.evaluate(
-        eval_dataset=eval_dataset.select(range(args.num_samples))
-    )
+    metrics = trainer.evaluate(eval_dataset=eval_dataset.select(range(args.num_samples)))
     metrics["_eval_args"] = vars(args)
     with open(out_file, "w") as f:
         json.dump(metrics, f)

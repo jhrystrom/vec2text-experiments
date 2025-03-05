@@ -30,10 +30,7 @@ def tokenize_function(
         # but set padding to -100
         # github.com/huggingface/transformers/blob/cbe63949d76efd153a1f389f38fe9ce1287e06b0/src/transformers/models/t5/modeling_t5.py#L1504-L1507
         output["labels"] = [
-            [
-                (-100 if token_id == tokenizer.pad_token_id else token_id)
-                for token_id in ids
-            ]
+            [(-100 if token_id == tokenizer.pad_token_id else token_id) for token_id in ids]
             for ids in output["input_ids"]
         ]
         embedder_output = embedder_tokenizer(
@@ -89,18 +86,13 @@ def tokenize_function_llama_chat(
         # but set padding to -100
         # github.com/huggingface/transformers/blob/cbe63949d76efd153a1f389f38fe9ce1287e06b0/src/transformers/models/t5/modeling_t5.py#L1504-L1507
         output["labels"] = [
-            [
-                (-100 if token_id == tokenizer.pad_token_id else token_id)
-                for token_id in ids
-            ]
+            [(-100 if token_id == tokenizer.pad_token_id else token_id) for token_id in ids]
             for ids in output["input_ids"]
         ]
         embedder_output = embedder_tokenizer(
             text=[
                 f"[INST] <<SYS>>\n{system_message}\n<</SYS>>\n {instruction} [/INST]"
-                for (system_message, instruction) in zip(
-                    examples["prefix"], examples["suffix"]
-                )
+                for (system_message, instruction) in zip(examples["prefix"], examples["suffix"])
             ],
             padding="max_length",
             truncation=True,
@@ -138,9 +130,7 @@ def embed_dataset_batch(model: InversionModel, batch: Dict) -> Dict:
     return batch
 
 
-def get_tokenizer_mapping(
-    lm: str, inverter: str, inverter_vocab_size: int
-) -> torch.Tensor:
+def get_tokenizer_mapping(lm: str, inverter: str, inverter_vocab_size: int) -> torch.Tensor:
     """Computes the mapping from token outputs in `lm`'s vocabulary to those in `inverter's
     vocabulary. Makes some assumptions about spacing.
     """

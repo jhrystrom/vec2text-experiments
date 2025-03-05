@@ -19,9 +19,7 @@ args = itertools.product(
     [True, False],
 )
 
-ArgsList = collections.namedtuple(
-    "ArgsList", ["prompt", "dataset", "model", "take_first_line"]
-)
+ArgsList = collections.namedtuple("ArgsList", ["prompt", "dataset", "model", "take_first_line"])
 
 BASE_CMD = """python experiment_scripts/logits/evaluate_baseline.py \
 jailbreak \

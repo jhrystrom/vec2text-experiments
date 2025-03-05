@@ -23,16 +23,10 @@ def test_generation():
     }
 
     eval_batch = next(
-        iter(
-            corr_trainer.get_eval_dataloader(
-                eval_dataset=corr_trainer.eval_dataset["nq"]
-            )
-        )
+        iter(corr_trainer.get_eval_dataloader(eval_dataset=corr_trainer.eval_dataset["nq"]))
     )
     one_eval_batch = {k: v[32:34] for k, v in eval_batch.items()}
-    one_eval_batch = {
-        k: v.to(corr_trainer.args.device) for k, v in one_eval_batch.items()
-    }
+    one_eval_batch = {k: v.to(corr_trainer.args.device) for k, v in one_eval_batch.items()}
 
     print(
         corr_trainer.embedder_tokenizer.batch_decode(
@@ -46,6 +40,4 @@ def test_generation():
         num_recursive_steps=10,
         sequence_beam_width=10,
     )
-    print(
-        corr_trainer.embedder_tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
-    )
+    print(corr_trainer.embedder_tokenizer.batch_decode(gen_ids, skip_special_tokens=True))

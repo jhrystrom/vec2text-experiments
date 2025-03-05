@@ -21,14 +21,12 @@ class CorrectorEncoderFromLogitsModel(CorrectorEncoderModel):
 
         config.embedder_dim = 768  # TODO: Pipe this in.
         config.num_zeros_to_add = self.num_zeros_to_add = 512  # TODO: Compute this.
-        config.num_repeat_tokens = (
-            self.num_repeat_tokens
-        ) = 42  # TODO: Compute this properly.
+        config.num_repeat_tokens = self.num_repeat_tokens = 42  # TODO: Compute this properly.
 
         # TODO: Calculate this explicitly from trainer.
         # self.unigram = torch.load(
         # "/home/jxm3/research/retrieval/inversion/llama_unigram.pt"
-        #)
+        # )
 
         self.embedder_dim = config.embedder_dim
         bottleneck_dim = config.embedder_dim
@@ -65,25 +63,19 @@ class CorrectorEncoderFromLogitsModel(CorrectorEncoderModel):
 
         self.embedding_transform_1 = nn.Sequential(
             nn.Linear(self.embedder_dim, bottleneck_dim),
-            nn.Dropout(
-                self.encoder_decoder.config.dropout_rate if self.use_ff_dropout else 0.0
-            ),
+            nn.Dropout(self.encoder_decoder.config.dropout_rate if self.use_ff_dropout else 0.0),
             nn.GELU(),
             nn.Linear(bottleneck_dim, self.encoder_hidden_dim),
         )
         self.embedding_transform_2 = nn.Sequential(
             nn.Linear(self.embedder_dim, bottleneck_dim),
-            nn.Dropout(
-                self.encoder_decoder.config.dropout_rate if self.use_ff_dropout else 0.0
-            ),
+            nn.Dropout(self.encoder_decoder.config.dropout_rate if self.use_ff_dropout else 0.0),
             nn.GELU(),
             nn.Linear(bottleneck_dim, self.encoder_hidden_dim),
         )
         self.embedding_transform_3 = nn.Sequential(
             nn.Linear(self.embedder_dim, bottleneck_dim),
-            nn.Dropout(
-                self.encoder_decoder.config.dropout_rate if self.use_ff_dropout else 0.0
-            ),
+            nn.Dropout(self.encoder_decoder.config.dropout_rate if self.use_ff_dropout else 0.0),
             nn.GELU(),
             nn.Linear(bottleneck_dim, self.encoder_hidden_dim),
         )
@@ -109,9 +101,7 @@ class CorrectorEncoderFromLogitsModel(CorrectorEncoderModel):
         hypothesis_embedding = hypothesis_embedding - unigram
 
         embedding = embedding[:, :32256]  # (b, 32768) -> (b, 32256)
-        hypothesis_embedding = hypothesis_embedding[
-            :, :32256
-        ]  # (b, 32768) -> (b, 32256)
+        hypothesis_embedding = hypothesis_embedding[:, :32256]  # (b, 32768) -> (b, 32256)
 
         diff_embedding = embedding - hypothesis_embedding
         embedding = embedding.to(torch.float32)
@@ -132,9 +122,7 @@ class CorrectorEncoderFromLogitsModel(CorrectorEncoderModel):
         diff_embedding = torch.einsum(
             "bsd,sdw->bsw", diff_embedding, self.sequence_weights_2.to(torch.float32)
         )
-        diff_embedding = diff_embedding.to(
-            next(self.sequence_layernorm_2.parameters()).dtype
-        )
+        diff_embedding = diff_embedding.to(next(self.sequence_layernorm_2.parameters()).dtype)
         diff_embedding = self.sequence_layernorm_2(diff_embedding)
         diff_embedding = self.embedding_transform_2(diff_embedding)
         #
@@ -154,9 +142,7 @@ class CorrectorEncoderFromLogitsModel(CorrectorEncoderModel):
         hypothesis_embedding = self.embedding_transform_3(hypothesis_embedding)
         inputs_embeds = self.encoder_decoder.encoder.embed_tokens(hypothesis_input_ids)
         #
-        ones = torch.ones(
-            (batch_size, 1), dtype=torch.long, device=hypothesis_input_ids.device
-        )
+        ones = torch.ones((batch_size, 1), dtype=torch.long, device=hypothesis_input_ids.device)
         sep_token = ones * self.encoder_decoder.config.eos_token_id
         sep_token = self.encoder_decoder.encoder.embed_tokens(sep_token)
 

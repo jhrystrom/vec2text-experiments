@@ -78,9 +78,7 @@ def load_nq_dev(
 
 
 def parse_args() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Get embeddings from a pre-trained model"
-    )
+    parser = argparse.ArgumentParser(description="Get embeddings from a pre-trained model")
     parser.add_argument(
         "--model_name",
         type=str,
@@ -135,9 +133,7 @@ def main():
 
     # dataset
     assert args.dataset_name == "nq_dev"
-    dataset = load_nq_dev(
-        tokenizer, embedder_tokenizer, max_seq_length=args.max_seq_length
-    )
+    dataset = load_nq_dev(tokenizer, embedder_tokenizer, max_seq_length=args.max_seq_length)
     dataset = dataset.select(range(min(args.n, len(dataset))))
 
     print(f"computing {args.n} embeddings...")
