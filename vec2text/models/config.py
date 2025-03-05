@@ -4,6 +4,10 @@ import transformers
 
 NEW_ATTRIBUTES = {
     "embedder_torch_dtype": "float32",
+    "use_vq": False,
+    "num_codebook_vectors": 512,
+    "vq_commitment_cost": 0.25,
+    "vq_loss_weight": 1.0,
 }
 
 

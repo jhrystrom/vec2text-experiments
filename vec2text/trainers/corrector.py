@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import datasets
 import torch
 import torch.nn as nn
-import transformers
 
 from vec2text.models import CorrectorEncoderModel
 from vec2text.models.model_utils import freeze_params
@@ -21,13 +20,11 @@ logger = logging.getLogger(__name__)
 
 class Corrector(BaseTrainer):
     """Trains an encoder model to generate embeddings that recursively correct of an
-    InversionTrainer.
+    InversionTrainer with codebook support.
     """
 
     train_dataset: datasets.Dataset
     eval_dataset: Dict[str, datasets.Dataset]
-    # TODO: don't assume that the encoder has to have the same tokenizer as the encoder_decoder
-    # or embedder model.
 
     _hypothesis_cache: Dict[str, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
 
@@ -75,31 +72,9 @@ class Corrector(BaseTrainer):
         assert self.args.fp16 == self.inversion_trainer.args.fp16
         assert self.args.bf16 == self.inversion_trainer.args.bf16
 
-    def evaluation_loop(
-        self, dataloader: torch.utils.data.DataLoader, *args, **kwargs
-    ) -> transformers.trainer_utils.EvalLoopOutput:
-        """
-        Run evaluation and returns metrics.
-
-        Override to compute ppl from eval loss.
-        """
-        self.inversion_trainer.model.to(self.args.device)
-
-        metric_key_prefix = kwargs["metric_key_prefix"]
-        output = super().evaluation_loop(dataloader=dataloader, *args, **kwargs)  # type: ignore
-        if metric_key_prefix in {"eval_msmarco", "eval_nq"}:
-            n_rounds = 5
-            self.num_gen_recursive_steps = n_rounds
-            multi_round_generation_metrics = self.eval_generation_metrics(dataloader=dataloader)
-            multiround_generation_metrics = {
-                f"{metric_key_prefix}_{n_rounds}round_{k}": v
-                for k, v in multi_round_generation_metrics.items()
-            }
-            output.metrics.update(multiround_generation_metrics)
-            self.num_gen_recursive_steps = 1
-
-        self.inversion_trainer.model.cpu()
-        return output
+        # Track centroid losses for logging
+        self.logging_centroid_loss = 0.0
+        self.logging_steps = 0
 
     def _precompute_hypothesis_and_embedding(
         self,

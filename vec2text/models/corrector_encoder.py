@@ -1,11 +1,19 @@
-import copy
+from dataclasses import dataclass
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as F  # type: ignore
 import transformers
 
 from vec2text.models.config import InversionConfig
+
+
+@dataclass
+class EnhancedOutput:
+    loss: torch.Tensor
+    logits: torch.Tensor
+    centroid_loss: torch.Tensor
+    original_loss: torch.Tensor
 
 
 class CorrectorEncoderModel(transformers.PreTrainedModel):
@@ -202,16 +210,6 @@ class CorrectorEncoderModel(transformers.PreTrainedModel):
 
             # Combine losses
             total_loss = outputs.loss + self.codebook_loss_weight * centroid_loss
-
-            # Create a new outputs object with the modified loss
-            from dataclasses import dataclass
-
-            @dataclass
-            class EnhancedOutput:
-                loss: torch.Tensor
-                logits: torch.Tensor
-                centroid_loss: torch.Tensor
-                original_loss: torch.Tensor
 
             return EnhancedOutput(
                 loss=total_loss,
