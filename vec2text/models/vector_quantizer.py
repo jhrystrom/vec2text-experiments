@@ -1,4 +1,3 @@
-# vec2text/models/vector_quantizer.py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F  # type: ignore
@@ -29,21 +28,27 @@ class VectorQuantizer(nn.Module):
             quantized: the quantized embeddings (same shape as inputs)
             loss: the quantization loss to add to the overall loss.
         """
-        # Compute L2 distance between each input and codebook vector.
-        # inputs: (B, D); codebook: (K, D)
-        distances = (
-            torch.sum(inputs**2, dim=1, keepdim=True)
-            + torch.sum(self.codebook**2, dim=1)
-            - 2 * torch.matmul(inputs, self.codebook.t())
+        # Normalize inputs and codebook for cosine similarity
+        inputs_normalized = F.normalize(inputs, p=2, dim=1)
+        codebook_normalized = F.normalize(self.codebook, p=2, dim=1)
+
+        # Compute cosine similarity between each input and codebook vector
+        # Cosine similarity = dot product of normalized vectors
+        # We use negative similarity since we want to find the closest (most similar) vector
+        # inputs_normalized: (B, D); codebook_normalized: (K, D)
+        cosine_similarities = torch.matmul(
+            inputs_normalized, codebook_normalized.t()
         )  # shape: (B, K)
-        # Find the nearest codebook vector for each input.
-        encoding_indices = torch.argmin(distances, dim=1)  # shape: (B,)
+        cosine_distances = -cosine_similarities  # Convert to distance (negative similarity)
+
+        # Find the nearest codebook vector for each input
+        encoding_indices = torch.argmin(cosine_distances, dim=1)  # shape: (B,)
         quantized = self.codebook[encoding_indices]  # (B, D)
 
-        # Compute the VQ loss (with a commitment loss term).
+        # Compute the VQ loss (with a commitment loss term)
         loss = F.mse_loss(quantized.detach(), inputs) + self.commitment_cost * F.mse_loss(
             quantized, inputs.detach()
         )
-        # Use the straight-through estimator.
+        # Use the straight-through estimator
         quantized = inputs + (quantized - inputs).detach()
         return quantized, loss
