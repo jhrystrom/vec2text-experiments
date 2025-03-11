@@ -8,6 +8,7 @@ import resource
 import sys
 from typing import Dict, Optional
 
+import numpy as np
 import datasets
 import torch
 import transformers
@@ -34,6 +35,7 @@ from vec2text.tokenize_data import (
     tokenize_function_llama_chat,
 )
 from vec2text.utils import MockEmbedder, dataset_map_multi_worker, get_num_proc
+from vec2text.utils.init_codebook import initialize_model_codebook_from_dataset
 
 # Allow W&B to start slowly.
 os.environ["WANDB__SERVICE_WAIT"] = "300"
@@ -580,7 +582,7 @@ class InversionExperiment(Experiment):
 
     @property
     def _wandb_project_name(self) -> str:
-        return "emb-inv-4"
+        return "emb-inv-4-vq-vae"
 
     def load_model(self) -> transformers.PreTrainedModel:
         return InversionModel(

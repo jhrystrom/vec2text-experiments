@@ -52,6 +52,10 @@ class InversionModel(transformers.PreTrainedModel):
                 config.model_name_or_path
             )
 
+        # Freeze the decoder by setting requires_grad=False for all parameters
+        for param in encoder_decoder.parameters():
+            param.requires_grad = False
+            
         self.embedder = embedder
         self.encoder_decoder = encoder_decoder
 
@@ -76,6 +80,11 @@ class InversionModel(transformers.PreTrainedModel):
             nn.GELU(),
             nn.Linear(bottleneck_dim, encoder_decoder.config.hidden_size),
         )
+        
+        # Freeze the embedding transform as well
+        for param in self.embedding_transform.parameters():
+            param.requires_grad = False
+            
         self.tokenizer = tokenizer
         self.embedder_tokenizer = embedder_tokenizer
         self.embedder_model_api = embedder_model_api
@@ -84,9 +93,10 @@ class InversionModel(transformers.PreTrainedModel):
         self.noise_level = 0
         self.embeddings_from_layer_n = None
 
-        # --- New: VQ-VAE components --- #
+        # --- VQ-VAE components --- #
         self.use_vq: bool = getattr(config, "use_vq", False)
         if self.use_vq:
+            print("Using VQ!")
             num_codebook_vectors = getattr(config, "num_codebook_vectors", 512)
             vq_commitment_cost = getattr(config, "vq_commitment_cost", 0.25)
             # We assume the dimension to quantize is that of the decoder hidden size.
@@ -95,10 +105,20 @@ class InversionModel(transformers.PreTrainedModel):
                 encoder_decoder.config.hidden_size,
                 vq_commitment_cost,
             )
+            # The vector quantizer is the only component that should be trainable
+            # Ensure its parameters require gradients
+            for param in self.vector_quantizer.parameters():
+                param.requires_grad = True
+                
             self.vq_loss_weight: float = getattr(config, "vq_loss_weight", 1.0)
         else:
             self.vector_quantizer = None
         # --- End VQ-VAE components --- #
+        
+        # Freeze the embedder if specified
+        if self.embedder_no_grad:
+            for param in self.embedder.parameters():
+                param.requires_grad = False
 
     def call_embedding_model(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor
@@ -131,8 +151,16 @@ class InversionModel(transformers.PreTrainedModel):
                 input_ids=embedder_input_ids, attention_mask=embedder_attention_mask
             )
 
-        # Project embeddings to decoder hidden space.
-        projected = self.embedding_transform(embeddings)  # shape: (B, hidden_size)
+        # Project embeddings to decoder hidden space (with gradient detached to ensure only VQ updates)
+        with torch.no_grad():
+            projected = self.embedding_transform(embeddings)  # shape: (B, hidden_size)
+        
+        # Apply VQ if enabled (during both training and generation)
+        if self.use_vq and self.vector_quantizer is not None:
+            # The only place where gradients are tracked
+            quantized, _ = self.vector_quantizer(projected.detach())
+            projected = quantized
+            
         # Reshape to sequence form (B, 1, hidden_size)
         projected = projected.reshape((projected.shape[0], 1, -1))
         attention_mask_out = torch.ones(
@@ -144,53 +172,56 @@ class InversionModel(transformers.PreTrainedModel):
         self,
         embedder_input_ids: torch.Tensor,
         embedder_attention_mask: torch.Tensor,
-        input_ids: torch.Tensor = None,
-        attention_mask: torch.Tensor = None,
         labels: torch.Tensor | None = None,
         frozen_embeddings: torch.Tensor | None = None,
+        decoder_input_ids: torch.Tensor | None = None,
         **kwargs,
     ) -> dict[str, torch.Tensor]:
-        # If labels provided, adjust decoder inputs (shift right) accordingly.
-        if labels is not None:
-            input_ids = input_ids[:, :-1]
-            attention_mask = attention_mask[:, :-1]
-
         # Compute projected hypothesis embeddings from the embedder.
-        embed_inputs_embeds, embed_attention_mask = self.embed_and_project(
+        inputs_embeds, attention_mask = self.embed_and_project(
             embedder_input_ids=embedder_input_ids,
             embedder_attention_mask=embedder_attention_mask,
             frozen_embeddings=frozen_embeddings,
         )
-
-        # --- VQ-VAE modification --- #
+        
+        # Calculate VQ loss if using VQ
         vq_loss = 0.0
         if self.use_vq and self.vector_quantizer is not None:
-            # Squeeze the sequence dimension (currently 1) to get (B, hidden_size)
-            hypothesis_embedding = embed_inputs_embeds.squeeze(1)
-            quantized, vq_loss = self.vector_quantizer(hypothesis_embedding)
-            # Replace hypothesis with quantized version and reshape back to sequence form.
-            embed_inputs_embeds = quantized.unsqueeze(1)
-        # --- End VQ-VAE modification --- #
+            # We need to calculate the VQ loss separately
+            if frozen_embeddings is not None:
+                embeddings = frozen_embeddings
+            elif self.embedder_no_grad:
+                with torch.no_grad():
+                    embeddings = self.call_embedding_model(
+                        input_ids=embedder_input_ids, attention_mask=embedder_attention_mask
+                    )
+            else:
+                embeddings = self.call_embedding_model(
+                    input_ids=embedder_input_ids, attention_mask=embedder_attention_mask
+                )
+                
+            # Detach the projected embeddings to ensure only codebook gets updated
+            with torch.no_grad():
+                projected = self.embedding_transform(embeddings)
+            
+            # Calculate the VQ loss - this is where the codebook will be updated
+            _, vq_loss = self.vector_quantizer(projected.detach())
+            
+        # Forward pass through the encoder-decoder model (with no_grad to ensure decoder isn't updated)
+        with torch.no_grad():
+            outputs = self.encoder_decoder(
+                inputs_embeds=inputs_embeds,
+                attention_mask=attention_mask,
+                labels=labels,
+                decoder_input_ids=decoder_input_ids,
+            )
 
-        # Get the decoder's input embeddings
-        input_embeddings_table = self.encoder_decoder.get_input_embeddings()
-        decoder_embeddings = input_embeddings_table(input_ids)
-
-        # Concatenate the (possibly quantized) hypothesis embedding with decoder embeddings
-        inputs_embeds = torch.cat((embed_inputs_embeds, decoder_embeddings), dim=1)
-        full_attention_mask = torch.cat((embed_attention_mask, attention_mask), dim=1)
-
-        outputs = self.encoder_decoder(
-            inputs_embeds=inputs_embeds,
-            attention_mask=full_attention_mask,
-            labels=labels,
-        )
-
-        # Combine the original reconstruction loss with the VQ loss (if any)
-        loss = outputs.loss
-        if self.use_vq and self.vector_quantizer is not None:
-            loss = loss + self.vq_loss_weight * vq_loss
-        outputs.loss = loss
+        # For backpropagation, we need to create a new loss that only depends on the VQ component
+        if self.use_vq and self.vector_quantizer is not None and vq_loss > 0:
+            # Create a new outputs object if necessary, or modify the existing one
+            # We don't use the original model's loss, only the VQ loss for optimization
+            outputs.loss = self.vq_loss_weight * vq_loss
+            
         return outputs
 
     def generate(
@@ -200,13 +231,14 @@ class InversionModel(transformers.PreTrainedModel):
     ) -> torch.Tensor:
         generation_kwargs = copy.copy(generation_kwargs)
         inputs_embeds, attention_mask = self.embed_and_project(
-            embedder_input_ids=inputs["embedder_input_ids"],
-            embedder_attention_mask=inputs["embedder_attention_mask"],
+            embedder_input_ids=inputs.get("embedder_input_ids"),
+            embedder_attention_mask=inputs.get("embedder_attention_mask"),
             frozen_embeddings=inputs.get("frozen_embeddings"),
         )
-        # For generation we do not quantize (or you could apply VQ if desired)
-        return self.encoder_decoder.generate(
-            inputs_embeds=inputs_embeds,
-            attention_mask=attention_mask,
-            **generation_kwargs,
-        )
+        # For generation, we use the frozen decoder
+        with torch.no_grad():
+            return self.encoder_decoder.generate(
+                inputs_embeds=inputs_embeds,
+                attention_mask=attention_mask,
+                **generation_kwargs,
+            )

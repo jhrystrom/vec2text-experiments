@@ -465,6 +465,7 @@ class BaseTrainer(transformers.Trainer):
         self.preds_sample_labels_list = preds_sample_labels_list
 
         metrics = {**num_tokens_metrics, **bleu_result, **sim_result}
+        metrics = {k: float(v) for k, v in metrics.items() if isinstance(v, np.floating)}
         return metrics
 
     def evaluation_loop(

@@ -25,6 +25,7 @@ dependencies = [
     "tokenizers",
     "tqdm",
     "transformers",
+    "wandb>=0.19.8",
 ]
 
 [project.optional-dependencies]

@@ -1,11 +1,13 @@
+from typing import Literal
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F  # type: ignore
 
-
+from vec2text.utils.init_codebook import initialize_codebook
 class VectorQuantizer(nn.Module):
     def __init__(
-        self, num_embeddings: int, embedding_dim: int, commitment_cost: float = 0.25
+        self, num_embeddings: int, embedding_dim: int, commitment_cost: float = 0.25, 
     ) -> None:
         """
         Args:
