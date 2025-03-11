@@ -55,7 +55,7 @@ class InversionModel(transformers.PreTrainedModel):
         # Freeze the decoder by setting requires_grad=False for all parameters
         for param in encoder_decoder.parameters():
             param.requires_grad = False
-            
+
         self.embedder = embedder
         self.encoder_decoder = encoder_decoder
 
@@ -80,11 +80,11 @@ class InversionModel(transformers.PreTrainedModel):
             nn.GELU(),
             nn.Linear(bottleneck_dim, encoder_decoder.config.hidden_size),
         )
-        
+
         # Freeze the embedding transform as well
         for param in self.embedding_transform.parameters():
             param.requires_grad = False
-            
+
         self.tokenizer = tokenizer
         self.embedder_tokenizer = embedder_tokenizer
         self.embedder_model_api = embedder_model_api
@@ -97,7 +97,7 @@ class InversionModel(transformers.PreTrainedModel):
         self.use_vq: bool = getattr(config, "use_vq", False)
         if self.use_vq:
             print("Using VQ!")
-            num_codebook_vectors = getattr(config, "num_codebook_vectors", 512)
+            num_codebook_vectors = getattr(config, "num_codebook_vectors", 499)
             vq_commitment_cost = getattr(config, "vq_commitment_cost", 0.25)
             # We assume the dimension to quantize is that of the decoder hidden size.
             self.vector_quantizer = VectorQuantizer(
@@ -109,12 +109,12 @@ class InversionModel(transformers.PreTrainedModel):
             # Ensure its parameters require gradients
             for param in self.vector_quantizer.parameters():
                 param.requires_grad = True
-                
+
             self.vq_loss_weight: float = getattr(config, "vq_loss_weight", 1.0)
         else:
             self.vector_quantizer = None
         # --- End VQ-VAE components --- #
-        
+
         # Freeze the embedder if specified
         if self.embedder_no_grad:
             for param in self.embedder.parameters():
@@ -154,13 +154,13 @@ class InversionModel(transformers.PreTrainedModel):
         # Project embeddings to decoder hidden space (with gradient detached to ensure only VQ updates)
         with torch.no_grad():
             projected = self.embedding_transform(embeddings)  # shape: (B, hidden_size)
-        
+
         # Apply VQ if enabled (during both training and generation)
         if self.use_vq and self.vector_quantizer is not None:
             # The only place where gradients are tracked
             quantized, _ = self.vector_quantizer(projected.detach())
             projected = quantized
-            
+
         # Reshape to sequence form (B, 1, hidden_size)
         projected = projected.reshape((projected.shape[0], 1, -1))
         attention_mask_out = torch.ones(
@@ -183,7 +183,7 @@ class InversionModel(transformers.PreTrainedModel):
             embedder_attention_mask=embedder_attention_mask,
             frozen_embeddings=frozen_embeddings,
         )
-        
+
         # Calculate VQ loss if using VQ
         vq_loss = 0.0
         if self.use_vq and self.vector_quantizer is not None:
@@ -199,14 +199,14 @@ class InversionModel(transformers.PreTrainedModel):
                 embeddings = self.call_embedding_model(
                     input_ids=embedder_input_ids, attention_mask=embedder_attention_mask
                 )
-                
+
             # Detach the projected embeddings to ensure only codebook gets updated
             with torch.no_grad():
                 projected = self.embedding_transform(embeddings)
-            
+
             # Calculate the VQ loss - this is where the codebook will be updated
             _, vq_loss = self.vector_quantizer(projected.detach())
-            
+
         # Forward pass through the encoder-decoder model (with no_grad to ensure decoder isn't updated)
         with torch.no_grad():
             outputs = self.encoder_decoder(
@@ -221,7 +221,7 @@ class InversionModel(transformers.PreTrainedModel):
             # Create a new outputs object if necessary, or modify the existing one
             # We don't use the original model's loss, only the VQ loss for optimization
             outputs.loss = self.vq_loss_weight * vq_loss
-            
+
         return outputs
 
     def generate(

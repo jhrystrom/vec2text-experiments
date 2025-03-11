@@ -8,7 +8,6 @@ import resource
 import sys
 from typing import Dict, Optional
 
-import numpy as np
 import datasets
 import torch
 import transformers
@@ -161,6 +160,10 @@ class Experiment(abc.ABC):
         checkpoint = self._get_checkpoint()
         logging.info("Experiment::train() loaded checkpoint %s", checkpoint)
         trainer = self.load_trainer()
+
+        if trainer.model.use_vq:
+            print("Initializing model!")
+            initialize_model_codebook_from_dataset(trainer.model, trainer.train_dataset)
 
         # Save model_args and data_args before training. Trainer will save training_args.
         if training_args.local_rank <= 0:
