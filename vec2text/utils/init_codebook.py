@@ -37,7 +37,9 @@ def codebook_from_dataset(train_dataset, num_samples: int = 2**13, codebook_size
     return initialize_codebook(all_embeddings, codebook_size)
 
 
-def initialize_model_codebook_from_dataset(model, train_dataset, num_samples: int = 2**13) -> None:
+def initialize_model_codebook_from_dataset(
+    model, train_dataset, num_samples: int = 2**11, debug: bool = False
+) -> None:
     """
     Samples a subset of training embeddings from the provided dataset,
     runs k-means clustering, and reinitializes the model's codebook with the centroids.
@@ -47,12 +49,24 @@ def initialize_model_codebook_from_dataset(model, train_dataset, num_samples: in
         train_dataset: The training Dataset.
         num_samples: The maximum number of embeddings to sample for clustering.
     """
+    codebook_size = model.vector_quantizer.num_embeddings
     centers = codebook_from_dataset(
         train_dataset=train_dataset,
         num_samples=num_samples,
-        codebook_size=model.vector_quantizer.num_embeddings,
+        codebook_size=codebook_size,
     )
+    assert centers.shape[0] == codebook_size, "not enough centers!"
+    # Debug the distances!
+    if debug:
+        from torchmetrics.functional.pairwise import pairwise_cosine_similarity
+
+        distances = pairwise_cosine_similarity(train_dataset["frozen_embeddings"], centers)
+        unique_minimums = torch.argmin(distances, dim=1).unique().shape
+        assert unique_minimums[0] > 100, f"{unique_minimums=} has too few matches!"
+        # assert unique_minimums[0] == codebook_size, f"Sizes don't match!: {unique_minimums} versus {codebook_size=}"
+
     model.vector_quantizer.codebook.data.copy_(centers)
+    # assert torch.all(centers.to("cpu") == model.vector_quantizer.codebook.data.to("cpu")), "Mismatch in codebook!"
     model.training_args = getattr(model, "training_args", None)
 
     print(f"Initialized codebook with k-means centroids from {num_samples} samples.")

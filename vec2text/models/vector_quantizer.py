@@ -37,15 +37,11 @@ class VectorQuantizer(nn.Module):
         cosine_distances = -cosine_similarities  # Convert to distance (negative similarity)
 
         encoding_indices = torch.argmin(cosine_distances, dim=1)  # shape: (B,)
-        # Problem: Why all the same value (7)?
-        print(f"{encoding_indices=}")
         quantized = self.codebook[encoding_indices]  # (B, D)
 
         # Don't use detach here! (for quantized)
         # Compute the VQ loss (with a commitment loss term)
-        loss = F.mse_loss(quantized.detach(), inputs) + self.commitment_cost * F.mse_loss(
-            quantized, inputs.detach()
-        )
+        loss = F.mse_loss(quantized, inputs) + self.commitment_cost * F.mse_loss(quantized, inputs)
 
         # Don't use detach here! (for quantized) - or detach both input
         # Use the straight-through estimator

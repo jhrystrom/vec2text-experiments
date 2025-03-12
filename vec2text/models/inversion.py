@@ -199,13 +199,8 @@ class InversionModel(transformers.PreTrainedModel):
                 embeddings = self.call_embedding_model(
                     input_ids=embedder_input_ids, attention_mask=embedder_attention_mask
                 )
-
-            # Detach the projected embeddings to ensure only codebook gets updated
-            with torch.no_grad():
-                projected = self.embedding_transform(embeddings)
-
             # Calculate the VQ loss - this is where the codebook will be updated
-            _, vq_loss = self.vector_quantizer(projected.detach())
+            _, vq_loss = self.vector_quantizer(embeddings.detach())
 
         # Forward pass through the encoder-decoder model (with no_grad to ensure decoder isn't updated)
         with torch.no_grad():
